@@ -2,7 +2,7 @@ import os, json, urllib.request
 from datetime import datetime, timezone
 
 ASSET_UID = "avkyXRNMhnGTPqmNwdj3C4"
-BASE = "https://kf.kobotoolbox.org"
+BASE = "https://eu.kobotoolbox.org"
 TOKEN = os.environ["KOBO_API_TOKEN"]
 
 def get_json(url):
