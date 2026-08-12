@@ -26,7 +26,9 @@ while url:
     page = get_json(url)
     raw.extend(page.get("results", []))
     url = page.get("next")
-
+def nombre_limpio(valor):
+    valor = str(valor or "").strip()
+    return valor.replace("_", " ").title()
 datos = []
 for r in raw:
     mm = pick(r, ["mm", "lluvia", "precipit"])
@@ -37,8 +39,8 @@ for r in raw:
     fecha = str(pick(r, ["fecha"]))[:10]
     datos.append({
         "municipio": str(pick(r, ["municipio"])).strip(),
-        "comunidad": str(pick(r, ["comunidad"])).strip(),
-        "caserio": str(pick(r, ["caserio", "caserío"])).strip(),
+        "comunidad": nombre_limpio(pick(r, ["comunidad"])),
+        "caserio": nombre_limpio(pick(r, ["caserio", "caserío"])),
         "responsable": str(pick(r, ["responsable", "informante"])).strip(),
         "fecha": fecha,
         "mm": mm
