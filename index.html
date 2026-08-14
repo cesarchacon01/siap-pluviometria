@@ -74,7 +74,7 @@ function render(){const d=filtered(),groups=new Map();for(const r of d){if(!grou
 const sum=pts.reduce((a,r)=>a+r.mm,0);
 const rain=pts.filter(r=>Number(r.mm)>0).length;
 const zero=pts.filter(r=>Number(r.mm)===0).length;
-const max=Math.max(0,...d.map(r=>Number(r.mm)||0));.$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';const desde=$('fDesde').value;
+const max=Math.max(0,...d.map(r=>Number(r.mm)||0));$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';const desde=$('fDesde').value;
 const hasta=$('fHasta').value;
 const diasPeriodo=(desde&&hasta)?Math.floor((new Date(hasta+'T00:00:00')-new Date(desde+'T00:00:00'))/86400000)+1:0;
 const esperados=groups.size*diasPeriodo;
