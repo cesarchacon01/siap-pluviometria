@@ -204,7 +204,21 @@ function makeBarConfig(points,label){
         tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${Number(c.raw).toLocaleString('es-GT',{maximumFractionDigits:1})} mm`}}
       },
       scales:{
-        x:{ticks:{maxRotation:60,minRotation:0,autoSkip:true,maxTicksLimit:18},grid:{display:false}},
+       x:{
+  ticks:{
+    maxRotation:45,
+    minRotation:45,
+    autoSkip:true,
+    maxTicksLimit:14,
+    padding:8
+  },
+  grid:{
+    display:true,
+    drawOnChartArea:false,
+    drawTicks:true,
+    tickLength:8
+  }
+},
         y:{beginAtZero:true,position:'left',title:{display:true,text:'Lluvia diaria (mm)'},grid:{color:'rgba(15,39,66,.08)'}},
         y1:{beginAtZero:true,position:'right',title:{display:true,text:'Acumulado (mm)'},grid:{drawOnChartArea:false}}
       }
