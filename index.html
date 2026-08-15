@@ -140,8 +140,8 @@ if(lectura){
     texto+=` El período continuo más prolongado sin lluvia fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
   }
   if(ultimaLluvia){
-    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}.`;
-  }
+    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}; al cierre del período analizado han transcurrido ${diasDesdeUltimaLluvia} días sin una nueva lluvia registrada.`;
+}
   lectura.textContent=texto;
 }                  
 renderRanking(groups);renderObservers(groups)}
