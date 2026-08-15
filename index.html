@@ -266,7 +266,7 @@ for(let i=0;i<filas;i++){
 }
 
 return html;
-})()}</div></div>`).join('')}</div>`;box.appendChild(el);charts.push(new Chart($('c'+i),makeBarConfig(g,first.responsable)));i++}}
+})()}</div></div>`;box.appendChild(el);charts.push(new Chart($('c'+i),makeBarConfig(g,first.responsable)));i++}}
 $('file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];loadRows(XLSX.utils.sheet_to_json(ws,{header:1,defval:''}))}catch(err){alert('No fue posible procesar el archivo: '+err.message)}};reader.readAsArrayBuffer(f)});
 $('reset').onclick=()=>{allData=[...DEFAULT_DATA];['fMunicipio','fComunidad','fCaserio','fResponsable'].forEach(id=>$(id).value='');initialize(true)};
 $('export').onclick=()=>{const d=filtered();const rows=[['Municipio','Comunidad','Caserío','Responsable','Fecha','Milímetros'],...d.map(r=>[r.municipio,r.comunidad,r.caserio,r.responsable,r.fecha,r.mm])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='resumen_pluviometria_filtrado.csv';a.click();URL.revokeObjectURL(a.href)};
