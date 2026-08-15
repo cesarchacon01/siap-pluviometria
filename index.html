@@ -128,8 +128,8 @@ if(lectura){
   let texto='';
 
   if(nivel==='municipal'){
-    texto=`En el monitoreo municipal, durante el período analizado se identificaron ${rain} días con registro de lluvia y ${zero} días sin lluvia registrada.`;
-  }else if(nivel==='comunidad'){
+    texto=`En el monitoreo municipal, durante el período analizado se identificó lluvia registrada en ${rain} días y ausencia de lluvia en ${zero} días.`;
+}else if(nivel==='comunidad'){
     texto=`En la comunidad seleccionada, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
   }else if(nivel==='caserio'){
     texto=`En el caserío seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
