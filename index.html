@@ -110,7 +110,28 @@ const cobertura=esperados>0?(registrosUnicos/esperados)*100:0;
 $('kCobertura').textContent=cobertura.toLocaleString('es-GT',{maximumFractionDigits:1})+' %';const dates=d.map(r=>r.fecha).sort();$('periodo').textContent=dates.length?`${fmtDate(dates[0])} — ${fmtDate(dates.at(-1))}`:'Sin datos';$('status').textContent=`Base activa: ${allData.length.toLocaleString('es-GT')} registros. Filtro actual: ${d.length.toLocaleString('es-GT')} registros.`;renderGlobal(d);
 const lectura=$('lecturaPeriodo');
 if(lectura){
-  let texto=`Durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
+
+  const comunidad=$('fComunidad').value;
+  const caserio=$('fCaserio').value;
+  const responsable=$('fResponsable').value;
+
+  let nivel='municipal';
+
+  if(comunidad && comunidad!=='Todos') nivel='comunidad';
+  if(caserio && caserio!=='Todos') nivel='caserio';
+  if(responsable && responsable!=='Todos') nivel='informante';
+
+  let texto='';
+
+  if(nivel==='municipal'){
+    texto=`En el monitoreo municipal, durante el período analizado se identificaron ${rain} días con registro de lluvia y ${zero} días sin lluvia registrada.`;
+  }else if(nivel==='comunidad'){
+    texto=`En la comunidad seleccionada, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
+  }else if(nivel==='caserio'){
+    texto=`En el caserío seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
+  }else{
+    texto=`Según los registros del informante seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
+  }
   if(periodoSinLluvia>0 && inicioPeriodoMax && finPeriodoMax){
     texto+=` El período continuo más prolongado sin lluvia fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
   }
