@@ -69,9 +69,63 @@ function mapHeaders(headers){const aliases={municipio:['municipio'],comunidad:['
 function loadRows(rows){if(!rows.length)throw Error('El archivo no contiene datos.');const h=rows[0],m=mapHeaders(h);if(Object.values(m).some(i=>i<0))throw Error('No se reconocieron las seis columnas requeridas.');allData=rows.slice(1).map(r=>({municipio:clean(r[m.municipio]),comunidad:clean(r[m.comunidad]),caserio:clean(r[m.caserio]),responsable:clean(r[m.responsable]),fecha:parseDate(r[m.fecha]),mm:Number(r[m.mm])||0})).filter(r=>r.responsable&&r.fecha);initialize(true)}
 function unique(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))}
 function fillSelect(id,vals,label){const el=$(id),old=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');if(vals.includes(old))el.value=old}
-function cascade(){let d=allData;const fm=$('fMunicipio').value;if(fm)d=d.filter(r=>r.municipio===fm);fillSelect('fComunidad',unique(d.map(r=>r.comunidad)),'Todas');const fc=$('fComunidad').value;if(fc)d=d.filter(r=>r.comunidad===fc);fillSelect('fCaserio',unique(d.map(r=>r.caserio)),'Todos');const fs=$('fCaserio').value;if(fs)d=d.filter(r=>r.caserio===fs);fillSelect('fResponsable',unique(d.map(r=>r.responsable)),'Todos');render()}
+function cascade(){
+  let d=allData;
+  const fm=$('fMunicipio').value;
+
+  if(!fm){
+    fillSelect('fComunidad',[],'Todas');
+    fillSelect('fCaserio',[],'Todos');
+    fillSelect('fResponsable',[],'Todos');
+    render();
+    return;
+  }
+
+  d=d.filter(r=>r.municipio===fm);
+  fillSelect('fComunidad',unique(d.map(r=>r.comunidad)),'Todas');
+
+  const fc=$('fComunidad').value;
+
+  if(!fc){
+    fillSelect('fCaserio',[],'Todos');
+    fillSelect('fResponsable',[],'Todos');
+    render();
+    return;
+  }
+
+  d=d.filter(r=>r.comunidad===fc);
+  fillSelect('fCaserio',unique(d.map(r=>r.caserio)),'Todos');
+
+  const fs=$('fCaserio').value;
+
+  if(!fs){
+    fillSelect('fResponsable',[],'Todos');
+    render();
+    return;
+  }
+
+  d=d.filter(r=>r.caserio===fs);
+  fillSelect('fResponsable',unique(d.map(r=>r.responsable)),'Todos');
+
+  render();
+}
 function filtered(){return allData.filter(r=>(!$('fMunicipio').value||r.municipio===$('fMunicipio').value)&&(!$('fComunidad').value||r.comunidad===$('fComunidad').value)&&(!$('fCaserio').value||r.caserio===$('fCaserio').value)&&(!$('fResponsable').value||r.responsable===$('fResponsable').value)&&(!$('fDesde').value||r.fecha>=$('fDesde').value)&&(!$('fHasta').value||r.fecha<=$('fHasta').value)).sort((a,b)=>a.fecha.localeCompare(b.fecha))}
-function initialize(resetDates=false){fillSelect('fMunicipio',unique(allData.map(r=>r.municipio)),'Todos');fillSelect('fComunidad',unique(allData.map(r=>r.comunidad)),'Todas');fillSelect('fCaserio',unique(allData.map(r=>r.caserio)),'Todos');fillSelect('fResponsable',unique(allData.map(r=>r.responsable)),'Todos');const dates=allData.map(r=>r.fecha).filter(Boolean).sort();if(resetDates&&dates.length){$('fDesde').value=dates[0];$('fHasta').value=dates.at(-1)}render()}
+function initialize(resetDates=false){
+  fillSelect('fMunicipio',unique(allData.map(r=>r.municipio)),'Todos');
+
+  fillSelect('fComunidad',[],'Todas');
+  fillSelect('fCaserio',[],'Todos');
+  fillSelect('fResponsable',[],'Todos');
+
+  const dates=allData.map(r=>r.fecha).filter(Boolean).sort();
+
+  if(resetDates&&dates.length){
+    $('fDesde').value=dates[0];
+    $('fHasta').value=dates.at(-1);
+  }
+
+  render();
+}
 function aggregateByDate(data){const m=new Map();for(const r of data){if(!m.has(r.fecha))m.set(r.fecha,{s:0,n:0});const o=m.get(r.fecha);o.s+=Number(r.mm)||0;o.n++;}return [...m].map(([fecha,o])=>({fecha,mm:o.n?o.s/o.n:0})).sort((a,b)=>a.fecha.localeCompare(b.fecha))}
 function render(){const d=filtered(),groups=new Map();for(const r of d){if(!groups.has(key(r)))groups.set(key(r),[]);groups.get(key(r)).push(r)}const pts=aggregateByDate(d);
 const sum=pts.reduce((a,r)=>a+r.mm,0);
