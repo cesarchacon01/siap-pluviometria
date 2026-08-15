@@ -124,7 +124,8 @@ if(lectura){
   if(comunidad && comunidad!=='Todos') nivel='comunidad';
   if(caserio && caserio!=='Todos') nivel='caserio';
   if(responsable && responsable!=='Todos') nivel='informante';
-
+const panelGraficaGeneral=$('panelGraficaGeneral');
+if(panelGraficaGeneral) panelGraficaGeneral.style.display=(nivel==='municipal')?'block':'none';
   let texto='';
 
   if(nivel==='municipal'){
