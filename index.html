@@ -99,7 +99,7 @@ for(const p of pts){
     }
 }
 const max=Math.max(0,...d.map(r=>Number(r.mm)||0));$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kPeriodoSinLluvia').textContent=periodoSinLluvia.toLocaleString('es-GT')+' días';
-$('kFechasPeriodoSinLluvia').textContent=(inicioPeriodoMax&&finPeriodoMax)?'Del '+fmtDate(inicioPeriodoMax)+' al '+fmtDate(finPeriodoMax):'';                 
+$('kFechasPeriodoSinLluvia').textContent=(inicioPeriodoMax&&finPeriodoMax)?fmtDate(inicioPeriodoMax).replace(' 2026','')+' – '+fmtDate(finPeriodoMax):'';              
 $('kUltimaLluvia').textContent=ultimaLluvia?fmtDate(ultimaLluvia.fecha):'Sin lluvia';const desde=$('fDesde').value;
 const hasta=$('fHasta').value;
 const diasPeriodo=(desde&&hasta)?Math.floor((new Date(hasta+'T00:00:00')-new Date(desde+'T00:00:00'))/86400000)+1:0;
