@@ -373,10 +373,162 @@ ws['!cols']=[
 // Activar autofiltro en los encabezados
 ws['!autofilter']={ref:ws['!ref']};
 
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Pluviometría');
+ // Crear libro Excel
+const wb=XLSX.utils.book_new();
 
-  XLSX.writeFile(wb,'pluviometria_filtrada.xlsx');
+// ======================================================
+// HOJA 1: PLUVIOMETRÍA
+// ======================================================
+XLSX.utils.book_append_sheet(wb,ws,'Pluviometría');
+
+
+// ======================================================
+// HOJA 2: RESUMEN DEL PERÍODO
+// ======================================================
+
+// Informantes identificados
+const informantesResumen = new Set(
+  d.map(r => r.responsable)
+).size;
+
+// Registros analizados
+const registrosResumen = d.length;
+
+// Agrupar registros por informante
+const gruposResumen = new Map();
+
+d.forEach(r=>{
+  const clave = [
+    r.municipio,
+    r.comunidad,
+    r.caserio,
+    r.responsable
+  ].join('|');
+
+  if(!gruposResumen.has(clave)){
+    gruposResumen.set(clave,[]);
+  }
+
+  gruposResumen.get(clave).push(r);
+});
+
+
+// Precipitación acumulada por informante
+const acumuladosResumen = [...gruposResumen.values()].map(g =>
+  g.reduce((s,r)=>s + (Number(r.mm)||0),0)
+);
+
+// Promedio acumulado
+const precipitacionResumen = acumuladosResumen.length
+  ? acumuladosResumen.reduce((a,b)=>a+b,0) / acumuladosResumen.length
+  : 0;
+
+
+// Fechas únicas con lluvia y sin lluvia
+const fechasLluviaResumen = new Set(
+  d.filter(r => Number(r.mm)>0).map(r=>r.fecha)
+);
+
+const fechasSinLluviaResumen = new Set(
+  d.filter(r => Number(r.mm)===0).map(r=>r.fecha)
+);
+
+const diasConLluviaResumen = fechasLluviaResumen.size;
+const diasSinLluviaResumen = fechasSinLluviaResumen.size;
+
+
+// Máximo diario registrado
+const maximoResumen = d.length
+  ? Math.max(...d.map(r=>Number(r.mm)||0))
+  : 0;
+
+
+// Última lluvia registrada
+const lluviasResumen = d
+  .filter(r=>Number(r.mm)>0)
+  .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+
+const ultimaLluviaResumen = lluviasResumen.length
+  ? lluviasResumen[lluviasResumen.length-1].fecha
+  : '';
+
+
+// Fechas seleccionadas
+const desdeResumen = $('fDesde').value || '';
+const hastaResumen = $('fHasta').value || '';
+
+
+// Filtros seleccionados
+const municipioResumen = $('fMunicipio').value || 'Todos';
+const comunidadResumen = $('fComunidad').value || 'Todas';
+const caserioResumen = $('fCaserio').value || 'Todos';
+const informanteResumen = $('fResponsable').value || 'Todos';
+
+
+// Datos de la hoja Resumen
+const datosResumen = [
+  ['GENERADOR ANALÍTICO DE PLUVIOMETRÍA'],
+  ['San Juan Ermita - Monitoreo comunitario'],
+  [],
+  ['FILTROS APLICADOS',''],
+  ['Municipio',municipioResumen],
+  ['Comunidad',comunidadResumen],
+  ['Caserío',caserioResumen],
+  ['Informante',informanteResumen],
+  ['Desde',desdeResumen ? new Date(desdeResumen+'T00:00:00') : ''],
+  ['Hasta',hastaResumen ? new Date(hastaResumen+'T00:00:00') : ''],
+  [],
+  ['INDICADORES DEL PERÍODO',''],
+  ['Informantes identificados',informantesResumen],
+  ['Registros analizados',registrosResumen],
+  ['Precipitación promedio acumulada (mm)',
+    Number(precipitacionResumen.toFixed(1))
+  ],
+  ['Días con lluvia (>0 mm)',diasConLluviaResumen],
+  ['Días sin lluvia (0 mm)',diasSinLluviaResumen],
+  ['Máximo diario registrado (mm)',maximoResumen],
+  ['Última lluvia registrada',
+    ultimaLluviaResumen
+      ? new Date(ultimaLluviaResumen+'T00:00:00')
+      : ''
+  ]
+];
+
+
+// Crear hoja
+const wsResumen = XLSX.utils.aoa_to_sheet(datosResumen);
+
+
+// Anchos de columnas
+wsResumen['!cols']=[
+  {wch:38},
+  {wch:30}
+];
+
+
+// Formato de fechas
+['B9','B10','B19'].forEach(celda=>{
+  if(wsResumen[celda] && wsResumen[celda].v instanceof Date){
+    wsResumen[celda].z='dd/mm/yyyy';
+  }
+});
+
+
+// Agregar hoja al libro
+XLSX.utils.book_append_sheet(
+  wb,
+  wsResumen,
+  'Resumen'
+);
+
+
+// ======================================================
+// DESCARGAR ARCHIVO
+// ======================================================
+XLSX.writeFile(
+  wb,
+  'pluviometria_filtrada.xlsx'
+);
 };
 ['fMunicipio','fComunidad','fCaserio'].forEach(id=>$(id).addEventListener('change',cascade));['fResponsable','fDesde','fHasta'].forEach(id=>$(id).addEventListener('change',render));fetch('datos.json?ts='+Date.now())
   .then(r=>{if(!r.ok)throw new Error('No se pudo cargar datos.json');return r.json();})
