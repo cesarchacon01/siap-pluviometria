@@ -475,17 +475,8 @@ const datosResumen = [
   ['Comunidad',comunidadResumen],
   ['Caserío',caserioResumen],
   ['Informante',informanteResumen],
-  ['Desde',desdeResumen ? new Date(
-  Number(desdeResumen.substring(0,4)),
-  Number(desdeResumen.substring(5,7))-1,
-  Number(desdeResumen.substring(8,10))
-) : ''],
-
-['Hasta',hastaResumen ? new Date(
-  Number(hastaResumen.substring(0,4)),
-  Number(hastaResumen.substring(5,7))-1,
-  Number(hastaResumen.substring(8,10))
-) : ''],
+['Desde',desdeResumen ? fmtDate(desdeResumen) : ''],
+['Hasta',hastaResumen ? fmtDate(hastaResumen) : ''],
   [],
   ['INDICADORES DEL PERÍODO',''],
   ['Informantes identificados',informantesResumen],
@@ -496,14 +487,8 @@ const datosResumen = [
   ['Días con lluvia (>0 mm)',diasConLluviaResumen],
   ['Días sin lluvia (0 mm)',diasSinLluviaResumen],
   ['Máximo diario registrado (mm)',maximoResumen],
-  ['Última lluvia registrada',
-  ultimaLluviaResumen
-    ? new Date(
-        Number(ultimaLluviaResumen.substring(0,4)),
-        Number(ultimaLluviaResumen.substring(5,7))-1,
-        Number(ultimaLluviaResumen.substring(8,10))
-      )
-    : ''
+ ['Última lluvia registrada',
+  ultimaLluviaResumen ? fmtDate(ultimaLluviaResumen) : ''
 ]
 ];
 
@@ -517,14 +502,6 @@ wsResumen['!cols']=[
   {wch:38},
   {wch:30}
 ];
-
-
-// Formato de fechas
-['B9','B10','B19'].forEach(celda=>{
-  if(wsResumen[celda] && wsResumen[celda].v instanceof Date){
-    wsResumen[celda].z='dd/mm/yyyy';
-  }
-});
 
 
 // Agregar hoja al libro
