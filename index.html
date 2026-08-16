@@ -448,7 +448,34 @@ const diasConLluviaResumen = [...lluviaPorFechaResumen.values()]
 
 const diasSinLluviaResumen = [...lluviaPorFechaResumen.values()]
   .filter(mm => mm === 0).length;
+// Período máximo continuo sin lluvia
+const fechasOrdenadasResumen = [...lluviaPorFechaResumen.entries()]
+  .sort((a,b) => a[0].localeCompare(b[0]));
 
+let periodoMaxSinLluviaResumen = 0;
+let rachaActualResumen = 0;
+let inicioRachaResumen = '';
+let inicioPeriodoMaxResumen = '';
+let finPeriodoMaxResumen = '';
+
+fechasOrdenadasResumen.forEach(([fecha, mm]) => {
+  if (mm === 0) {
+    if (rachaActualResumen === 0) {
+      inicioRachaResumen = fecha;
+    }
+
+    rachaActualResumen++;
+
+    if (rachaActualResumen > periodoMaxSinLluviaResumen) {
+      periodoMaxSinLluviaResumen = rachaActualResumen;
+      inicioPeriodoMaxResumen = inicioRachaResumen;
+      finPeriodoMaxResumen = fecha;
+    }
+  } else {
+    rachaActualResumen = 0;
+    inicioRachaResumen = '';
+  }
+});
 
 // Máximo diario registrado
 const maximoResumen = d.length
@@ -464,7 +491,23 @@ const lluviasResumen = d
 const ultimaLluviaResumen = lluviasResumen.length
   ? lluviasResumen[lluviasResumen.length-1].fecha
   : '';
+// Días desde la última lluvia
+let diasDesdeUltimaLluviaResumen = 0;
 
+if (ultimaLluviaResumen && hastaResumen) {
+  const fechaUltimaResumen = new Date(
+    ultimaLluviaResumen + 'T00:00:00'
+  );
+
+  const fechaFinalResumen = new Date(
+    hastaResumen + 'T00:00:00'
+  );
+
+  diasDesdeUltimaLluviaResumen = Math.round(
+    (fechaFinalResumen - fechaUltimaResumen) /
+    (1000 * 60 * 60 * 24)
+  );
+}
 
 // Fechas seleccionadas
 const desdeResumen = $('fDesde').value || '';
@@ -500,6 +543,13 @@ const datosResumen = [
   ['Días con lluvia (>0 mm)',diasConLluviaResumen],
   ['Días sin lluvia (0 mm)',diasSinLluviaResumen],
   ['Máximo diario registrado (mm)',maximoResumen],
+  ['Período máximo continuo sin lluvia (días)',periodoMaxSinLluviaResumen],
+['Período máximo sin lluvia',
+    inicioPeriodoMaxResumen && finPeriodoMaxResumen
+        ? fmtDate(inicioPeriodoMaxResumen) + ' - ' + fmtDate(finPeriodoMaxResumen)
+        : ''
+],
+['Días desde la última lluvia',diasDesdeUltimaLluviaResumen],
  ['Última lluvia registrada',
   ultimaLluviaResumen ? fmtDate(ultimaLluviaResumen) : ''
 ]
