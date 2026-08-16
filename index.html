@@ -348,11 +348,18 @@ $('export').onclick=()=>{
     'Comunidad':r.comunidad,
     'Caserío':r.caserio,
     'Informante':r.responsable,
-    'Fecha':r.fecha,
+   'Fecha':new Date(r.fecha+'T00:00:00'),
     'Milímetros':Number(r.mm)||0
   }));
 
   const ws=XLSX.utils.json_to_sheet(rows);
+  // Formato de fecha dd/mm/aaaa
+for(let i=2;i<=rows.length+1;i++){
+  const celda=ws['E'+i];
+  if(celda){
+    celda.z='dd/mm/yyyy';
+  }
+}
   // Ajustar ancho de columnas
 ws['!cols']=[
   {wch:20}, // Municipio
