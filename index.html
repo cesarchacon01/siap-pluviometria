@@ -168,6 +168,12 @@ for(const p of pts){
         contadorSinLluvia=0;
         inicioSinLluvia=null;
     }
+
+  // Verificar la racha sin lluvia que continúa hasta el cierre del período
+if(contadorSinLluvia > periodoSinLluvia){
+    periodoSinLluvia = contadorSinLluvia;
+    inicioPeriodoMax = inicioSinLluvia;
+    finPeriodoMax = pts.length ? pts[pts.length - 1].fecha : null;
 }
 const max=Math.max(0,...d.map(r=>Number(r.mm)||0));$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kPeriodoSinLluvia').textContent=periodoSinLluvia.toLocaleString('es-GT')+' días';
 $('kFechasPeriodoSinLluvia').textContent=(inicioPeriodoMax&&finPeriodoMax)?fmtDate(inicioPeriodoMax).replace(' 2026','')+' – '+fmtDate(finPeriodoMax):'';              
