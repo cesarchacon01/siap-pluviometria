@@ -208,10 +208,10 @@ if(panelGraficaGeneral) panelGraficaGeneral.style.display=(nivel==='municipal')?
     texto=`Según los registros del informante seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
   }
   if(periodoSinLluvia>0 && inicioPeriodoMax && finPeriodoMax){
-    texto+=` El período continuo más prolongado sin lluvia fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
+    texto+=` El período continuo más prolongado con registros de 0 mm fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
   }
   if(ultimaLluvia){
-    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}; al cierre del período analizado han transcurrido ${diasDesdeUltimaLluvia} días sin una nueva lluvia registrada.`;
+    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}; al cierre del período seleccionado han transcurrido ${diasDesdeUltimaLluvia} días calendario desde esa lluvia.`;
 }
   lectura.textContent=texto;
 }                  
