@@ -493,7 +493,9 @@ const ultimaLluviaResumen = lluviasResumen.length
   : '';
 // Días desde la última lluvia
 let diasDesdeUltimaLluviaResumen = 0;
-
+// Fechas seleccionadas
+const desdeResumen = $('fDesde').value || '';
+const hastaResumen = $('fHasta').value || '';
 if (ultimaLluviaResumen && hastaResumen) {
   const fechaUltimaResumen = new Date(
     ultimaLluviaResumen + 'T00:00:00'
@@ -509,9 +511,7 @@ if (ultimaLluviaResumen && hastaResumen) {
   );
 }
 
-// Fechas seleccionadas
-const desdeResumen = $('fDesde').value || '';
-const hastaResumen = $('fHasta').value || '';
+
 
 
 // Filtros seleccionados
