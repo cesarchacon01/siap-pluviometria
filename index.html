@@ -353,15 +353,18 @@ $('export').onclick=()=>{
   }));
 
   const ws=XLSX.utils.json_to_sheet(rows);
+  // Ajustar ancho de columnas
+ws['!cols']=[
+  {wch:20}, // Municipio
+  {wch:24}, // Comunidad
+  {wch:30}, // Caserío
+  {wch:32}, // Informante
+  {wch:14}, // Fecha
+  {wch:14}  // Milímetros
+];
 
-  ws['!cols']=[
-    {wch:20},
-    {wch:25},
-    {wch:25},
-    {wch:32},
-    {wch:15},
-    {wch:12}
-  ];
+// Activar autofiltro en los encabezados
+ws['!autofilter']={ref:ws['!ref']};
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Pluviometría');
