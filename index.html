@@ -425,16 +425,29 @@ const precipitacionResumen = acumuladosResumen.length
 
 
 // Fechas únicas con lluvia y sin lluvia
-const fechasLluviaResumen = new Set(
-  d.filter(r => Number(r.mm)>0).map(r=>r.fecha)
-);
+// Consolidar registros por fecha
+const lluviaPorFechaResumen = new Map();
 
-const fechasSinLluviaResumen = new Set(
-  d.filter(r => Number(r.mm)===0).map(r=>r.fecha)
-);
+d.forEach(r => {
+  const fecha = r.fecha;
+  const mm = Number(r.mm) || 0;
 
-const diasConLluviaResumen = fechasLluviaResumen.size;
-const diasSinLluviaResumen = fechasSinLluviaResumen.size;
+  if (!lluviaPorFechaResumen.has(fecha)) {
+    lluviaPorFechaResumen.set(fecha, 0);
+  }
+
+  lluviaPorFechaResumen.set(
+    fecha,
+    lluviaPorFechaResumen.get(fecha) + mm
+  );
+});
+
+// Clasificar cada fecha una sola vez
+const diasConLluviaResumen = [...lluviaPorFechaResumen.values()]
+  .filter(mm => mm > 0).length;
+
+const diasSinLluviaResumen = [...lluviaPorFechaResumen.values()]
+  .filter(mm => mm === 0).length;
 
 
 // Máximo diario registrado
