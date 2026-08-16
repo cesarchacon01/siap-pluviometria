@@ -475,8 +475,17 @@ const datosResumen = [
   ['Comunidad',comunidadResumen],
   ['Caserío',caserioResumen],
   ['Informante',informanteResumen],
-  ['Desde',desdeResumen ? new Date(desdeResumen+'T00:00:00') : ''],
-  ['Hasta',hastaResumen ? new Date(hastaResumen+'T00:00:00') : ''],
+  ['Desde',desdeResumen ? new Date(
+  Number(desdeResumen.substring(0,4)),
+  Number(desdeResumen.substring(5,7))-1,
+  Number(desdeResumen.substring(8,10))
+) : ''],
+
+['Hasta',hastaResumen ? new Date(
+  Number(hastaResumen.substring(0,4)),
+  Number(hastaResumen.substring(5,7))-1,
+  Number(hastaResumen.substring(8,10))
+) : ''],
   [],
   ['INDICADORES DEL PERÍODO',''],
   ['Informantes identificados',informantesResumen],
@@ -488,10 +497,14 @@ const datosResumen = [
   ['Días sin lluvia (0 mm)',diasSinLluviaResumen],
   ['Máximo diario registrado (mm)',maximoResumen],
   ['Última lluvia registrada',
-    ultimaLluviaResumen
-      ? new Date(ultimaLluviaResumen+'T00:00:00')
-      : ''
-  ]
+  ultimaLluviaResumen
+    ? new Date(
+        Number(ultimaLluviaResumen.substring(0,4)),
+        Number(ultimaLluviaResumen.substring(5,7))-1,
+        Number(ultimaLluviaResumen.substring(8,10))
+      )
+    : ''
+]
 ];
 
 
