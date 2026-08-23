@@ -974,7 +974,97 @@ doc.setTextColor(90);
         282,
         {align:'right'}
     );
+// ==================================================
+// PÁGINA 2 - COMPORTAMIENTO DE LA PRECIPITACIÓN
+// ==================================================
 
+doc.addPage();
+
+// Título
+doc.setTextColor(0);
+doc.setFont('helvetica','bold');
+doc.setFontSize(16);
+
+doc.text(
+    'COMPORTAMIENTO DE LA PRECIPITACIÓN',
+    105,
+    22,
+    { align:'center' }
+);
+
+// Subtítulo
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+
+doc.text(
+    `${municipio}${comunidad !== 'Todas' ? ' - ' + comunidad : ''}${caserio !== 'Todos' ? ' - ' + caserio : ''}`,
+    105,
+    30,
+    { align:'center' }
+);
+
+// Línea institucional
+doc.setDrawColor(30,80,120);
+doc.line(20,35,190,35);
+
+// Encabezado de gráfica
+doc.setFont('helvetica','bold');
+doc.setFontSize(12);
+doc.text('Comportamiento de la lluvia durante el período',20,48);
+
+// Espacio reservado para la gráfica
+doc.setDrawColor(210);
+doc.rect(20,55,170,90);
+
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+doc.setTextColor(120);
+
+doc.text(
+    'Espacio reservado para la gráfica de precipitación',
+    105,
+    100,
+    { align:'center' }
+);
+
+// Línea de tiempo
+doc.setTextColor(0);
+doc.setFont('helvetica','bold');
+doc.setFontSize(12);
+
+doc.text('Línea de tiempo del período',20,165);
+
+// Espacio reservado para la línea de tiempo
+doc.setDrawColor(210);
+doc.rect(20,172,170,65);
+
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+doc.setTextColor(120);
+
+doc.text(
+    'Espacio reservado para la línea de tiempo',
+    105,
+    205,
+    { align:'center' }
+);
+
+// Pie página 2
+doc.setFontSize(8);
+doc.setTextColor(90);
+
+doc.text(
+    'Fuente: Monitoreo pluviométrico comunitario.',
+    20,
+    282
+);
+
+doc.text(
+    'CRS - MAGA',
+    190,
+    282,
+    { align:'right' }
+);
     // Nombre automático del archivo
     const limpiarNombre = texto =>
         texto
