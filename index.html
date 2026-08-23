@@ -878,105 +878,15 @@ doc.setFont('helvetica','normal');
 doc.setFontSize(10);
 
 // Construcción automática de la interpretación
-let interpretacionAgro = '';
 
-if (periodoMaxSinLluviaPDF > 0) {
+const lineas = doc.splitTextToSize(lectura,170);
 
-    interpretacionAgro =
-        `Durante el período analizado se identificó un período máximo de ` +
-        `${periodoMaxSinLluviaPDF} días continuos sin lluvia`;
+doc.text(lineas,20,y);
 
-    if (inicioPeriodoMaxPDF && finPeriodoMaxPDF) {
-        interpretacionAgro +=
-            `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} ` +
-            `y el ${fechaTexto(finPeriodoMaxPDF)}`;
-    }
-
-    interpretacionAgro +=
-        `. Este comportamiento evidencia una interrupción prolongada de las ` +
-        `precipitaciones dentro del período de monitoreo y amerita seguimiento, ` +
-        `especialmente en zonas con limitada disponibilidad de humedad en el suelo. `;
-
-}
-
-// Situación al cierre del período
-if (diasDesdeUltimaLluviaPDF === 0) {
-
-    interpretacionAgro +=
-        `Al cierre del período se registró precipitación, por lo que la última ` +
-        `lluvia coincide con la fecha final analizada.`;
-
-} else if (diasDesdeUltimaLluviaPDF === 1) {
-
-    interpretacionAgro +=
-        `Al cierre del período había transcurrido 1 día desde la última lluvia registrada.`;
-
-} else {
-
-    interpretacionAgro +=
-        `Al cierre del período habían transcurrido ${diasDesdeUltimaLluviaPDF} días ` +
-        `desde la última lluvia registrada.`;
-
-}
-
-const lineasInterpretacion = doc.splitTextToSize(
-    interpretacionAgro,
-    170
-);
-
-doc.text(
-    lineasInterpretacion,
-    20,
-    y
-);
-// Avanzar según la extensión de la lectura
-y += (lineas.length * 5) + 10;
-
-// ===============================================
-// INTERPRETACIÓN AGROCLIMÁTICA
-// ===============================================
-
-doc.setFont('helvetica','bold');
-doc.setFontSize(12);
-doc.text('Interpretación agroclimática',20,y);
-
-y += 8;
-
-doc.setFont('helvetica','normal');
-doc.setFontSize(10);
-
-let interpretacion = '';
-
-if (periodoMaxSinLluviaPDF >= 15) {
-
-    interpretacion =
-        `Durante el período analizado se identificó un período prolongado de ${periodoMaxSinLluviaPDF} días continuos sin lluvia. ` +
-        `Esta condición constituye una señal relevante para el monitoreo agroclimático y requiere valorar sus posibles efectos sobre los cultivos, ` +
-        `considerando su etapa de desarrollo, las condiciones de humedad del suelo y la distribución temporal de las lluvias.`;
-
-} else if (periodoMaxSinLluviaPDF >= 10) {
-
-    interpretacion =
-        `Durante el período analizado se identificó un período de ${periodoMaxSinLluviaPDF} días continuos sin lluvia. ` +
-        `La duración de este período amerita seguimiento, especialmente en cultivos sensibles a déficits de humedad y en etapas críticas de desarrollo.`;
-
-} else {
-
-    interpretacion =
-        `Durante el período analizado, el período continuo más prolongado sin lluvia fue de ${periodoMaxSinLluviaPDF} días. ` +
-        `Este indicador debe analizarse junto con la precipitación acumulada, la distribución de las lluvias y las condiciones observadas en campo.`;
-}
-
-const lineasInterpretacion = doc.splitTextToSize(interpretacion,170);
-
-doc.text(lineasInterpretacion,20,y);
-
-y += (lineasInterpretacion.length * 5);
-
-    // Pie de página
-    doc.setFontSize(8);
-    doc.setTextColor(90);
-    doc.text(
+// Pie de página
+doc.setFontSize(8);
+doc.setTextColor(90);
+      doc.text(
         'Fuente: Monitoreo pluviométrico comunitario.',
         20,
         282
