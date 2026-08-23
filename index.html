@@ -593,17 +593,256 @@ $('exportPDF').onclick = () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    doc.setFontSize(18);
-    doc.text('INFORME DE MONITOREO PLUVIOMÉTRICO', 20, 25);
+    // Datos según filtros actualmente seleccionados
+    const d = filtered();
 
+    if (!d.length) {
+        alert('No existen registros para generar el informe.');
+        return;
+    }
+
+    const municipio = $('fMunicipio').value || 'Todos';
+    const comunidad = $('fComunidad').value || 'Todas';
+    const caserio = $('fCaserio').value || 'Todos';
+    const desde = $('fDesde').value || '';
+    const hasta = $('fHasta').value || '';
+
+    // Determinar automáticamente el tipo de informe
+    let tipoInforme = 'GENERAL';
+
+    if (municipio !== 'Todos') {
+        tipoInforme = 'MUNICIPAL';
+    }
+
+    if (comunidad !== 'Todas') {
+        tipoInforme = 'COMUNITARIO';
+    }
+
+    if (caserio !== 'Todos') {
+        tipoInforme = 'LOCAL';
+    }
+
+    // Informantes
+    const informantes = new Set(
+        d.map(r => r.responsable).filter(Boolean)
+    ).size;
+
+    // Precipitación acumulada por informante
+    const acumulados = new Map();
+
+    d.forEach(r => {
+        const responsable = r.responsable || 'Sin identificar';
+
+        acumulados.set(
+            responsable,
+            (acumulados.get(responsable) || 0) + (Number(r.mm) || 0)
+        );
+    });
+
+    const valoresAcumulados = [...acumulados.values()];
+
+    const precipitacionPromedio = valoresAcumulados.length
+        ? valoresAcumulados.reduce((a,b) => a+b, 0) / valoresAcumulados.length
+        : 0;
+
+    // Consolidar lluvia por fecha
+    const lluviaPorFecha = new Map();
+
+    d.forEach(r => {
+        const fecha = r.fecha;
+        const mm = Number(r.mm) || 0;
+
+        lluviaPorFecha.set(
+            fecha,
+            (lluviaPorFecha.get(fecha) || 0) + mm
+        );
+    });
+
+    const diasConLluvia = [...lluviaPorFecha.values()]
+        .filter(mm => mm > 0).length;
+
+    const diasSinLluvia = [...lluviaPorFecha.values()]
+        .filter(mm => mm === 0).length;
+
+    const maximoDiario = d.length
+        ? Math.max(...d.map(r => Number(r.mm) || 0))
+        : 0;
+
+    // Última lluvia registrada
+    const fechasConLluvia = [...lluviaPorFecha.entries()]
+        .filter(([fecha,mm]) => mm > 0)
+        .map(([fecha]) => fecha)
+        .sort();
+
+    const ultimaLluvia = fechasConLluvia.length
+        ? fechasConLluvia[fechasConLluvia.length - 1]
+        : '';
+
+    // Función para mostrar fechas
+    const fechaTexto = (fecha) => {
+        if (!fecha) return 'Sin registro';
+
+        const partes = fecha.split('-');
+
+        return partes.length === 3
+            ? `${partes[2]}/${partes[1]}/${partes[0]}`
+            : fecha;
+    };
+
+    // ==================================================
+    // CONSTRUCCIÓN DEL PDF
+    // ==================================================
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(16);
+    doc.text(
+        `INFORME ${tipoInforme} DE MONITOREO PLUVIOMÉTRICO`,
+        105,
+        22,
+        { align:'center' }
+    );
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.text(
+        'Generador Analítico de Pluviometría',
+        105,
+        30,
+        { align:'center' }
+    );
+
+    doc.setDrawColor(30,80,120);
+    doc.line(20,35,190,35);
+
+    // Ubicación
+    doc.setFont('helvetica','bold');
     doc.setFontSize(12);
-    doc.text('Generador Analítico de Pluviometría', 20, 35);
+    doc.text('Ámbito del informe',20,47);
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+
+    let y = 56;
+
+    doc.text(`Municipio: ${municipio}`,20,y);
+    y += 7;
+
+    if (comunidad !== 'Todas') {
+        doc.text(`Comunidad: ${comunidad}`,20,y);
+        y += 7;
+    }
+
+    if (caserio !== 'Todos') {
+        doc.text(`Caserío: ${caserio}`,20,y);
+        y += 7;
+    }
+
+    doc.text(
+        `Período: ${fechaTexto(desde)} al ${fechaTexto(hasta)}`,
+        20,
+        y
+    );
+
+    y += 14;
+
+    // Indicadores
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text('Indicadores del período',20,y);
+
+    y += 10;
+
+    const indicadores = [
+        ['Informantes identificados', informantes],
+        ['Registros analizados', d.length],
+        ['Precipitación promedio acumulada', `${precipitacionPromedio.toFixed(1)} mm`],
+        ['Días con lluvia (>0 mm)', diasConLluvia],
+        ['Días sin lluvia (0 mm)', diasSinLluvia],
+        ['Máximo diario registrado', `${maximoDiario} mm`],
+        ['Última lluvia registrada', fechaTexto(ultimaLluvia)]
+    ];
 
     doc.setFontSize(10);
-    doc.text('CRS - MAGA', 20, 45);
 
-    doc.save('Informe_Monitoreo_Pluviometrico.pdf');
-};  
+    indicadores.forEach(([nombre,valor]) => {
+
+        doc.setFont('helvetica','normal');
+        doc.text(nombre,25,y);
+
+        doc.setFont('helvetica','bold');
+        doc.text(String(valor),180,y,{align:'right'});
+
+        doc.setDrawColor(225);
+        doc.line(20,y+2,190,y+2);
+
+        y += 9;
+    });
+
+    // Lectura automática
+    y += 7;
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(12);
+    doc.text('Lectura del período',20,y);
+
+    y += 9;
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+
+    const lectura =
+        `Durante el período analizado se procesaron ${d.length} registros ` +
+        `correspondientes a ${informantes} informantes. La precipitación ` +
+        `promedio acumulada fue de ${precipitacionPromedio.toFixed(1)} mm. ` +
+        `Se identificaron ${diasConLluvia} días con lluvia y ${diasSinLluvia} ` +
+        `días sin lluvia. El máximo diario registrado fue de ${maximoDiario} mm. ` +
+        `La última lluvia registrada corresponde al ${fechaTexto(ultimaLluvia)}.`;
+
+    const lineas = doc.splitTextToSize(lectura,170);
+
+    doc.text(lineas,20,y);
+
+    // Pie de página
+    doc.setFontSize(8);
+    doc.setTextColor(90);
+    doc.text(
+        'Fuente: Monitoreo pluviométrico comunitario.',
+        20,
+        282
+    );
+
+    doc.text(
+        'CRS - MAGA',
+        190,
+        282,
+        {align:'right'}
+    );
+
+    // Nombre automático del archivo
+    const limpiarNombre = texto =>
+        texto
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g,'')
+            .replace(/\s+/g,'_')
+            .replace(/[^\w-]/g,'');
+
+    let nombreLugar = municipio;
+
+    if (comunidad !== 'Todas') {
+        nombreLugar = comunidad + '_' + municipio;
+    }
+
+    if (caserio !== 'Todos') {
+        nombreLugar = caserio + '_' + comunidad + '_' + municipio;
+    }
+
+    const nombreArchivo =
+        'Informe_Pluviometrico_' +
+        limpiarNombre(nombreLugar) +
+        '.pdf';
+
+    doc.save(nombreArchivo);
+};
 ['fMunicipio','fComunidad','fCaserio'].forEach(id=>$(id).addEventListener('change',cascade));['fResponsable','fDesde','fHasta'].forEach(id=>$(id).addEventListener('change',render));fetch('datos.json?ts='+Date.now())
   .then(r=>{if(!r.ok)throw new Error('No se pudo cargar datos.json');return r.json();})
   .then(j=>{
