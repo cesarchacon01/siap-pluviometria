@@ -842,12 +842,17 @@ if (ultimaLluvia && hasta) {
     doc.setFontSize(10);
 
     const lectura =
-        `Durante el período analizado se procesaron ${d.length} registros ` +
-        `correspondientes a ${informantes} informantes. La precipitación ` +
-        `promedio acumulada fue de ${precipitacionPromedio.toFixed(1)} mm. ` +
-        `Se identificaron ${diasConLluvia} días con lluvia y ${diasSinLluvia} ` +
-        `días sin lluvia. El máximo diario registrado fue de ${maximoDiario} mm. ` +
-        `La última lluvia registrada corresponde al ${fechaTexto(ultimaLluvia)}.`;
+    `Durante el período analizado se procesaron ${d.length} registros ` +
+    `correspondientes a ${informantes} informantes. La precipitación ` +
+    `promedio acumulada fue de ${precipitacionPromedio.toFixed(1)} mm. ` +
+    `Se identificaron ${diasConLluvia} días con lluvia y ${diasSinLluvia} ` +
+    `días sin lluvia. El máximo diario registrado fue de ${maximoDiario} mm. ` +
+    `El período continuo más prolongado sin lluvia fue de ${periodoMaxSinLluviaPDF} días` +
+    (inicioPeriodoMaxPDF && finPeriodoMaxPDF
+        ? `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. `
+        : `. `) +
+    `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días ` +
+    `desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`;
 
     const lineas = doc.splitTextToSize(lectura,170);
 
