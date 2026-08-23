@@ -1016,7 +1016,31 @@ doc.text('Comportamiento de la lluvia durante el período',20,48);
 // GRÁFICA DE PRECIPITACIÓN DEL VISOR
 // ==================================================
 
-const canvasGraficaPDF = document.getElementById('globalChart');
+// Seleccionar automáticamente la gráfica correcta según el nivel del informe
+let canvasGraficaPDF = null;
+
+// Si estamos en nivel general o municipal,
+// utilizamos la gráfica consolidada
+if (
+    comunidad === 'Todas' &&
+    caserio === 'Todos' &&
+    (!$('#fResponsable').value || $('#fResponsable').value === 'Todos')
+) {
+
+    canvasGraficaPDF = document.getElementById('globalChart');
+
+} else {
+
+    // En comunidad, caserío o informante buscamos
+    // la gráfica individual visible generada por renderObservers()
+    const graficasIndividuales = document.querySelectorAll(
+        '#observers .smallchart canvas'
+    );
+
+    if (graficasIndividuales.length > 0) {
+        canvasGraficaPDF = graficasIndividuales[0];
+    }
+}
 
 if (canvasGraficaPDF) {
 
