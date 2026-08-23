@@ -677,7 +677,51 @@ $('exportPDF').onclick = () => {
     const ultimaLluvia = fechasConLluvia.length
         ? fechasConLluvia[fechasConLluvia.length - 1]
         : '';
+// Período máximo continuo sin lluvia
+const fechasOrdenadasPDF = [...lluviaPorFecha.entries()]
+    .sort((a,b) => a[0].localeCompare(b[0]));
 
+let periodoMaxSinLluviaPDF = 0;
+let rachaActualPDF = 0;
+let inicioRachaPDF = '';
+let inicioPeriodoMaxPDF = '';
+let finPeriodoMaxPDF = '';
+
+fechasOrdenadasPDF.forEach(([fecha, mm]) => {
+
+    if (mm === 0) {
+
+        if (rachaActualPDF === 0) {
+            inicioRachaPDF = fecha;
+        }
+
+        rachaActualPDF++;
+
+        if (rachaActualPDF > periodoMaxSinLluviaPDF) {
+            periodoMaxSinLluviaPDF = rachaActualPDF;
+            inicioPeriodoMaxPDF = inicioRachaPDF;
+            finPeriodoMaxPDF = fecha;
+        }
+
+    } else {
+        rachaActualPDF = 0;
+        inicioRachaPDF = '';
+    }
+});
+
+// Días desde la última lluvia
+let diasDesdeUltimaLluviaPDF = 0;
+
+if (ultimaLluvia && hasta) {
+
+    const fechaUltimaPDF = new Date(ultimaLluvia + 'T00:00:00');
+    const fechaHastaPDF = new Date(hasta + 'T00:00:00');
+
+    diasDesdeUltimaLluviaPDF = Math.round(
+        (fechaHastaPDF - fechaUltimaPDF) /
+        (1000 * 60 * 60 * 24)
+    );
+}
     // Función para mostrar fechas
     const fechaTexto = (fecha) => {
         if (!fecha) return 'Sin registro';
@@ -752,15 +796,22 @@ $('exportPDF').onclick = () => {
 
     y += 10;
 
-    const indicadores = [
-        ['Informantes identificados', informantes],
-        ['Registros analizados', d.length],
-        ['Precipitación promedio acumulada', `${precipitacionPromedio.toFixed(1)} mm`],
-        ['Días con lluvia (>0 mm)', diasConLluvia],
-        ['Días sin lluvia (0 mm)', diasSinLluvia],
-        ['Máximo diario registrado', `${maximoDiario} mm`],
-        ['Última lluvia registrada', fechaTexto(ultimaLluvia)]
-    ];
+  const indicadores = [
+    ['Informantes identificados', informantes],
+    ['Registros analizados', d.length],
+    ['Precipitación promedio acumulada', `${precipitacionPromedio.toFixed(1)} mm`],
+    ['Días con lluvia (>0 mm)', diasConLluvia],
+    ['Días sin lluvia (0 mm)', diasSinLluvia],
+    ['Máximo diario registrado', `${maximoDiario} mm`],
+    ['Período máximo continuo sin lluvia', `${periodoMaxSinLluviaPDF} días`],
+    ['Período máximo sin lluvia',
+        inicioPeriodoMaxPDF && finPeriodoMaxPDF
+            ? `${fechaTexto(inicioPeriodoMaxPDF)} - ${fechaTexto(finPeriodoMaxPDF)}`
+            : 'Sin registro'
+    ],
+    ['Días desde la última lluvia', `${diasDesdeUltimaLluviaPDF} días`],
+    ['Última lluvia registrada', fechaTexto(ultimaLluvia)]
+];
 
     doc.setFontSize(10);
 
