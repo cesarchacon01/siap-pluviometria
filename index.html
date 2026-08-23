@@ -861,7 +861,79 @@ if (ultimaLluvia && hasta) {
     const lineas = doc.splitTextToSize(lectura,170);
 
     doc.text(lineas,20,y);
+// ==============================================
+// INTERPRETACIÓN AGROCLIMÁTICA
+// ==============================================
 
+// Ubicar el bloque después de la Lectura del período
+y += (lineas.length * 5) + 10;
+
+doc.setFont('helvetica','bold');
+doc.setFontSize(12);
+doc.setTextColor(0);
+doc.text('Interpretación agroclimática',20,y);
+
+y += 8;
+
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+
+let textoAgro = '';
+
+// Interpretación del período máximo sin lluvia
+if (periodoMaxSinLluviaPDF > 0) {
+
+    textoAgro =
+        `Durante el período analizado se identificó un período máximo de ` +
+        `${periodoMaxSinLluviaPDF} días continuos sin lluvia`;
+
+    if (inicioPeriodoMaxPDF && finPeriodoMaxPDF) {
+
+        textoAgro +=
+            `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} ` +
+            `y el ${fechaTexto(finPeriodoMaxPDF)}`;
+    }
+
+    textoAgro +=
+        `. Este comportamiento evidencia una interrupción prolongada de las ` +
+        `precipitaciones dentro del período de monitoreo y constituye una condición ` +
+        `que amerita seguimiento, especialmente en zonas con limitada disponibilidad ` +
+        `de humedad en el suelo.`;
+
+} else {
+
+    textoAgro =
+        `Durante el período analizado no se identificaron períodos continuos sin lluvia ` +
+        `dentro de los registros disponibles.`;
+}
+
+// Situación al cierre del período
+if (ultimaLluvia) {
+
+    if (diasDesdeUltimaLluviaPDF === 0) {
+
+        textoAgro +=
+            ` Al cierre del período se registró precipitación, por lo que la última ` +
+            `lluvia coincide con la fecha final analizada.`;
+
+    } else if (diasDesdeUltimaLluviaPDF === 1) {
+
+        textoAgro +=
+            ` Al cierre del período había transcurrido 1 día desde la última lluvia ` +
+            `registrada.`;
+
+    } else {
+
+        textoAgro +=
+            ` Al cierre del período habían transcurrido ` +
+            `${diasDesdeUltimaLluviaPDF} días desde la última lluvia registrada.`;
+    }
+}
+
+// Dividir el texto para ajustarlo al ancho del PDF
+const lineasAgro = doc.splitTextToSize(textoAgro,170);
+
+doc.text(lineasAgro,20,y);
 // Pie de página
 doc.setFontSize(8);
 doc.setTextColor(90);
