@@ -861,7 +861,74 @@ if (ultimaLluvia && hasta) {
     const lineas = doc.splitTextToSize(lectura,170);
 
     doc.text(lineas,20,y);
+// ==============================================
+// INTERPRETACIÓN AGROCLIMÁTICA
+// ==============================================
 
+// Calcular dónde terminó el texto anterior
+y += (lineas.length * 5) + 8;
+
+doc.setFont('helvetica','bold');
+doc.setFontSize(12);
+doc.text('Interpretación agroclimática',20,y);
+
+y += 8;
+
+doc.setFont('helvetica','normal');
+doc.setFontSize(10);
+
+// Construcción automática de la interpretación
+let interpretacionAgro = '';
+
+if (periodoMaxSinLluviaPDF > 0) {
+
+    interpretacionAgro =
+        `Durante el período analizado se identificó un período máximo de ` +
+        `${periodoMaxSinLluviaPDF} días continuos sin lluvia`;
+
+    if (inicioPeriodoMaxPDF && finPeriodoMaxPDF) {
+        interpretacionAgro +=
+            `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} ` +
+            `y el ${fechaTexto(finPeriodoMaxPDF)}`;
+    }
+
+    interpretacionAgro +=
+        `. Este comportamiento evidencia una interrupción prolongada de las ` +
+        `precipitaciones dentro del período de monitoreo y amerita seguimiento, ` +
+        `especialmente en zonas con limitada disponibilidad de humedad en el suelo. `;
+
+}
+
+// Situación al cierre del período
+if (diasDesdeUltimaLluviaPDF === 0) {
+
+    interpretacionAgro +=
+        `Al cierre del período se registró precipitación, por lo que la última ` +
+        `lluvia coincide con la fecha final analizada.`;
+
+} else if (diasDesdeUltimaLluviaPDF === 1) {
+
+    interpretacionAgro +=
+        `Al cierre del período había transcurrido 1 día desde la última lluvia registrada.`;
+
+} else {
+
+    interpretacionAgro +=
+        `Al cierre del período habían transcurrido ${diasDesdeUltimaLluviaPDF} días ` +
+        `desde la última lluvia registrada.`;
+
+}
+
+const lineasInterpretacion = doc.splitTextToSize(
+    interpretacionAgro,
+    170
+);
+
+doc.text(
+    lineasInterpretacion,
+    20,
+    y
+);
 // Avanzar según la extensión de la lectura
 y += (lineas.length * 5) + 10;
 
