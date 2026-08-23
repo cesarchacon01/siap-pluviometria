@@ -851,9 +851,13 @@ if (ultimaLluvia && hasta) {
     (inicioPeriodoMaxPDF && finPeriodoMaxPDF
         ? `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. `
         : `. `) +
-    `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días ` +
-    `desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`;
-
+    (
+    diasDesdeUltimaLluviaPDF === 0
+        ? `Al cierre del período analizado, la última lluvia registrada coincidió con la fecha de cierre (${fechaTexto(ultimaLluvia)}).`
+        : diasDesdeUltimaLluviaPDF === 1
+            ? `Al cierre del período analizado había transcurrido 1 día desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`
+            : `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`
+);
     const lineas = doc.splitTextToSize(lectura,170);
 
     doc.text(lineas,20,y);
