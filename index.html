@@ -894,11 +894,36 @@ if (periodoMaxSinLluviaPDF > 0) {
             `y el ${fechaTexto(finPeriodoMaxPDF)}`;
     }
 
+   // Interpretación según duración del período sin lluvia
+if (periodoMaxSinLluviaPDF <= 5) {
+
     textoAgro +=
-        `. Este comportamiento evidencia una interrupción prolongada de las ` +
-        `precipitaciones dentro del período de monitoreo y constituye una condición ` +
-        `que amerita seguimiento, especialmente en zonas con limitada disponibilidad ` +
-        `de humedad en el suelo.`;
+        `. Este intervalo representa una interrupción corta de las precipitaciones ` +
+        `dentro del período de monitoreo y se recomienda mantener el seguimiento ` +
+        `del comportamiento de la lluvia.`;
+
+} else if (periodoMaxSinLluviaPDF <= 10) {
+
+    textoAgro +=
+        `. Este intervalo representa una interrupción moderada de las precipitaciones ` +
+        `y constituye una condición que requiere atención y seguimiento de la ` +
+        `disponibilidad de lluvia en los días posteriores.`;
+
+} else if (periodoMaxSinLluviaPDF <= 15) {
+
+    textoAgro +=
+        `. Este intervalo representa una interrupción prolongada de las precipitaciones ` +
+        `y constituye una condición agroclimática relevante que amerita seguimiento, ` +
+        `especialmente en zonas con limitada disponibilidad de humedad en el suelo.`;
+
+} else {
+
+    textoAgro +=
+        `. Este intervalo representa una interrupción muy prolongada de las precipitaciones ` +
+        `y constituye una condición agroclimática de especial atención. Se recomienda ` +
+        `fortalecer el seguimiento de la lluvia y de las condiciones de humedad disponibles ` +
+        `en el territorio.`;
+}
 
 } else {
 
