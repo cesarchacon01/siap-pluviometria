@@ -861,27 +861,6 @@ if (ultimaLluvia && hasta) {
     const lineas = doc.splitTextToSize(lectura,170);
 
     doc.text(lineas,20,y);
-// ==============================================
-// INTERPRETACIÓN AGROCLIMÁTICA
-// ==============================================
-
-// Calcular dónde terminó el texto anterior
-y += (lineas.length * 5) + 8;
-
-doc.setFont('helvetica','bold');
-doc.setFontSize(12);
-doc.text('Interpretación agroclimática',20,y);
-
-y += 8;
-
-doc.setFont('helvetica','normal');
-doc.setFontSize(10);
-
-// Construcción automática de la interpretación
-
-const lineas = doc.splitTextToSize(lectura,170);
-
-doc.text(lineas,20,y);
 
 // Pie de página
 doc.setFontSize(8);
