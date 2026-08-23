@@ -1012,20 +1012,44 @@ doc.setFont('helvetica','bold');
 doc.setFontSize(12);
 doc.text('Comportamiento de la lluvia durante el período',20,48);
 
-// Espacio reservado para la gráfica
-doc.setDrawColor(210);
-doc.rect(20,55,170,90);
+// ==================================================
+// GRÁFICA DE PRECIPITACIÓN DEL VISOR
+// ==================================================
 
-doc.setFont('helvetica','normal');
-doc.setFontSize(10);
-doc.setTextColor(120);
+const canvasGraficaPDF = document.getElementById('globalChart');
 
-doc.text(
-    'Espacio reservado para la gráfica de precipitación',
-    105,
-    100,
-    { align:'center' }
-);
+if (canvasGraficaPDF) {
+
+    const imagenGraficaPDF = canvasGraficaPDF.toDataURL(
+        'image/png',
+        1.0
+    );
+
+    doc.addImage(
+        imagenGraficaPDF,
+        'PNG',
+        20,   // posición X
+        55,   // posición Y
+        170,  // ancho
+        90    // alto
+    );
+
+} else {
+
+    doc.setDrawColor(210);
+    doc.rect(20,55,170,90);
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10);
+    doc.setTextColor(120);
+
+    doc.text(
+        'No fue posible generar la gráfica de precipitación.',
+        105,
+        100,
+        { align:'center' }
+    );
+}
 
 // Línea de tiempo
 doc.setTextColor(0);
