@@ -1244,6 +1244,17 @@ if (
     204,
     {align:'center'}
   );
+  // Identificar claramente el final del período seco
+doc.setFont('helvetica','normal');
+doc.setFontSize(7);
+doc.setTextColor(90);
+
+doc.text(
+  'Fin período seco',
+  xFinSeco,
+  209,
+  {align:'center'}
+);
 }
 
 
@@ -1312,6 +1323,53 @@ doc.text(
 // --------------------------------------------------
 
 if (ultimaLluvia) {
+
+  const xUltimaLluvia =
+    posicionFechaTL(ultimaLluvia);
+
+  // Punto de última lluvia
+  doc.setFillColor(40,120,180);
+
+  doc.circle(
+    xUltimaLluvia,
+    yTL,
+    3,
+    'F'
+  );
+
+  // Línea guía vertical
+  doc.setDrawColor(40,120,180);
+  doc.setLineWidth(0.5);
+
+  doc.line(
+    xUltimaLluvia,
+    yTL - 3,
+    xUltimaLluvia,
+    yTL - 14
+  );
+
+  // Etiqueta superior
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(40,90,140);
+
+  doc.text(
+    'Última lluvia',
+    xUltimaLluvia,
+    yTL - 19,
+    {align:'center'}
+  );
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+
+  doc.text(
+    fechaTexto(ultimaLluvia),
+    xUltimaLluvia,
+    yTL - 15,
+    {align:'center'}
+  );
+}
 
   const xUltimaLluvia =
     posicionFechaTL(ultimaLluvia);
