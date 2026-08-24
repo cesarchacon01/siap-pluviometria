@@ -1237,14 +1237,13 @@ xEtiquetaPeriodoSeco = Math.max(
 );
 
 doc.text(
-    `${periodoMaxSinLluviaPDF} días sin lluvia`,
+  `${periodoMaxSinLluviaPDF} días continuos sin lluvia`,
     xEtiquetaPeriodoSeco,
     184,
     {align:'center'}
 );
 
 
-  // Fechas del período seco
   doc.setFont('helvetica','normal');
   doc.setFontSize(8);
   doc.setTextColor(70);
@@ -1254,7 +1253,7 @@ doc.setFont('helvetica','normal');
 doc.setFontSize(8);
 doc.setTextColor(70);
 
-// Fecha de inicio del período seco
+// Fecha de inicio del período máximo sin lluvia
 doc.text(
     fechaTexto(inicioPeriodoMaxPDF),
     xInicioSeco,
@@ -1291,7 +1290,7 @@ if ((xFinTL - xFinSeco) < 22) {
 }
 
 doc.text(
-    'Fin período seco',
+  'Fin período sin lluvia',
     xEtiquetaFinSeco,
     yTL + 14,
     {align: alineacionFinSeco}
