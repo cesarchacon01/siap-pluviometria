@@ -1019,17 +1019,11 @@ doc.text('Comportamiento de la lluvia durante el período',20,48);
 // Seleccionar automáticamente la gráfica correcta según el nivel del informe
 let canvasGraficaPDF = null;
 
-const responsableSeleccionado =
-    $('#fResponsable').value &&
-    $('#fResponsable').value !== ''
-        ? $('#fResponsable').value
-        : 'Todos';
-
 // GENERAL O MUNICIPAL
 if (
     comunidad === 'Todas' &&
     caserio === 'Todos' &&
-    responsableSeleccionado === 'Todos'
+  (!$('#fResponsable').value || $('#fResponsable').value === 'Todos')
 ) {
 
     canvasGraficaPDF = document.getElementById('globalChart');
