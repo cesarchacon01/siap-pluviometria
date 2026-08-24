@@ -1275,16 +1275,27 @@ doc.text(
     {align:'left'}
 );
 
-// Etiqueta del final del período seco
+// Etiqueta inteligente del final del período seco
 doc.setFont('helvetica','bold');
 doc.setFontSize(7);
 doc.setTextColor(90);
 
+// Posición normal: a la derecha del punto
+let xEtiquetaFinSeco = xFinSeco + 4;
+let alineacionFinSeco = 'left';
+
+// Si el final del período seco está cerca del cierre,
+// mover la etiqueta hacia la izquierda
+if ((xFinTL - xFinSeco) < 22) {
+    xEtiquetaFinSeco = xFinSeco - 4;
+    alineacionFinSeco = 'right';
+}
+
 doc.text(
     'Fin período seco',
-    xFinSeco + 4,
+    xEtiquetaFinSeco,
     yTL + 14,
-    {align:'left'}
+    {align: alineacionFinSeco}
 );
 }
 
