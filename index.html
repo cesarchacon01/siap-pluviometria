@@ -1100,97 +1100,272 @@ if (canvasGraficaPDF) {
     );
 }
 
-// Línea de tiempo
+// ==================================================
+// LÍNEA DE TIEMPO DEL PERÍODO ANALIZADO
+// ==================================================
+
 doc.setTextColor(0);
 doc.setFont('helvetica','bold');
 doc.setFontSize(12);
 
 doc.text('Línea de tiempo del período',20,165);
 
-// Línea de tiempo visual del período seco
+
+// --------------------------------------------------
+// CONFIGURACIÓN DE LA LÍNEA
+// --------------------------------------------------
+
 const xInicioTL = 25;
 const xFinTL = 185;
 const yTL = 195;
 
-// Línea base
-doc.setDrawColor(170);
-doc.setLineWidth(0.6);
-doc.line(xInicioTL, yTL, xFinTL, yTL);
 
-// Punto inicial del período seco
-doc.setFillColor(20, 72, 92);
-doc.circle(xInicioTL, yTL, 2.5, 'F');
+// Convertir fechas para calcular posiciones
+const fechaInicioTL = new Date(desde + 'T00:00:00');
+const fechaFinTL = new Date(hasta + 'T00:00:00');
 
-// Tramo del período máximo sin lluvia
-doc.setDrawColor(210, 140, 40);
-doc.setLineWidth(3);
-doc.line(xInicioTL, yTL, xFinTL, yTL);
-
-// Punto final del período seco
-doc.setFillColor(20, 72, 92);
-doc.circle(xFinTL, yTL, 2.5, 'F');
-
-// Número de días
-doc.setFont('helvetica','bold');
-doc.setFontSize(14);
-doc.setTextColor(0);
-doc.text(
-    `${periodoMaxSinLluviaPDF} días continuos sin lluvia`,
-    105,
-    183,
-    {align:'center'}
+const totalDiasTL = Math.max(
+  1,
+  Math.round(
+    (fechaFinTL - fechaInicioTL) /
+    (1000 * 60 * 60 * 24)
+  )
 );
 
-// Fechas
+
+// Función para convertir una fecha en posición X
+const posicionFechaTL = (fecha) => {
+
+  if (!fecha) return xInicioTL;
+
+  const f = new Date(fecha + 'T00:00:00');
+
+  const dias = Math.round(
+    (f - fechaInicioTL) /
+    (1000 * 60 * 60 * 24)
+  );
+
+  return xInicioTL +
+    (dias / totalDiasTL) *
+    (xFinTL - xInicioTL);
+};
+
+
+// --------------------------------------------------
+// LÍNEA BASE DEL PERÍODO COMPLETO
+// --------------------------------------------------
+
+doc.setDrawColor(170);
+doc.setLineWidth(1);
+
+doc.line(
+  xInicioTL,
+  yTL,
+  xFinTL,
+  yTL
+);
+
+
+// --------------------------------------------------
+// PERÍODO MÁXIMO CONTINUO SIN LLUVIA
+// --------------------------------------------------
+
+if (
+  inicioPeriodoMaxPDF &&
+  finPeriodoMaxPDF &&
+  periodoMaxSinLluviaPDF > 0
+) {
+
+  const xInicioSeco =
+    posicionFechaTL(inicioPeriodoMaxPDF);
+
+  const xFinSeco =
+    posicionFechaTL(finPeriodoMaxPDF);
+
+
+  // Tramo seco destacado
+  doc.setDrawColor(210,140,40);
+  doc.setLineWidth(4);
+
+  doc.line(
+    xInicioSeco,
+    yTL,
+    xFinSeco,
+    yTL
+  );
+
+
+  // Puntos inicio y fin
+  doc.setFillColor(210,140,40);
+
+  doc.circle(
+    xInicioSeco,
+    yTL,
+    2.3,
+    'F'
+  );
+
+  doc.circle(
+    xFinSeco,
+    yTL,
+    2.3,
+    'F'
+  );
+
+
+  // Número de días
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.setTextColor(0);
+
+  doc.text(
+    `${periodoMaxSinLluviaPDF} días sin lluvia`,
+    (xInicioSeco + xFinSeco) / 2,
+    184,
+    {align:'center'}
+  );
+
+
+  // Fechas del período seco
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(70);
+
+  doc.text(
+    fechaTexto(inicioPeriodoMaxPDF),
+    xInicioSeco,
+    204,
+    {align:'center'}
+  );
+
+  doc.text(
+    fechaTexto(finPeriodoMaxPDF),
+    xFinSeco,
+    204,
+    {align:'center'}
+  );
+}
+
+
+// --------------------------------------------------
+// INICIO DEL PERÍODO ANALIZADO
+// --------------------------------------------------
+
+doc.setFillColor(20,72,92);
+
+doc.circle(
+  xInicioTL,
+  yTL,
+  2.5,
+  'F'
+);
+
 doc.setFont('helvetica','normal');
-doc.setFontSize(9);
+doc.setFontSize(8);
 doc.setTextColor(70);
 
 doc.text(
-    fechaTexto(inicioPeriodoMaxPDF),
-    xInicioTL,
-    204,
-    {align:'center'}
+  fechaTexto(desde),
+  xInicioTL,
+  214,
+  {align:'center'}
 );
 
 doc.text(
-    fechaTexto(finPeriodoMaxPDF),
-    xFinTL,
-    204,
-    {align:'center'}
+  'Inicio',
+  xInicioTL,
+  219,
+  {align:'center'}
 );
 
-// Etiquetas
-doc.setFontSize(8);
+
+// --------------------------------------------------
+// FIN DEL PERÍODO ANALIZADO
+// --------------------------------------------------
+
+doc.setFillColor(20,72,92);
+
+doc.circle(
+  xFinTL,
+  yTL,
+  2.5,
+  'F'
+);
 
 doc.text(
-    'Inicio',
-    xInicioTL,
-    211,
-    {align:'center'}
+  fechaTexto(hasta),
+  xFinTL,
+  214,
+  {align:'center'}
 );
 
 doc.text(
-    'Fin',
-    xFinTL,
-    211,
-    {align:'center'}
+  'Cierre',
+  xFinTL,
+  219,
+  {align:'center'}
 );
 
-// Explicación
+
+// --------------------------------------------------
+// ÚLTIMA LLUVIA REGISTRADA
+// --------------------------------------------------
+
+if (ultimaLluvia) {
+
+  const xUltimaLluvia =
+    posicionFechaTL(ultimaLluvia);
+
+  doc.setFillColor(40,120,180);
+
+  doc.circle(
+    xUltimaLluvia,
+    yTL,
+    3,
+    'F'
+  );
+
+  // Etiqueta superior
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(40,90,140);
+
+  doc.text(
+    'Última lluvia',
+    xUltimaLluvia,
+    176,
+    {align:'center'}
+  );
+
+  doc.setFont('helvetica','normal');
+
+  doc.text(
+    fechaTexto(ultimaLluvia),
+    xUltimaLluvia,
+    181,
+    {align:'center'}
+  );
+}
+
+
+// --------------------------------------------------
+// EXPLICACIÓN
+// --------------------------------------------------
+
+doc.setFont('helvetica','normal');
 doc.setFontSize(9);
 doc.setTextColor(50);
 
 const textoTL = doc.splitTextToSize(
-    `Período continuo más prolongado sin lluvia registrado durante el período analizado.`,
-    155
+  `La línea representa el período analizado. El tramo resaltado identifica el período continuo más prolongado sin lluvia, de ${periodoMaxSinLluviaPDF} días, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. La última lluvia registrada ocurrió el ${fechaTexto(ultimaLluvia)}.`,
+  160
 );
 
 doc.text(
-    textoTL,
-    105,
-    222,
-    {align:'center'}
+  textoTL,
+  105,
+  232,
+  {align:'center'}
 );
 
 // Pie página 2
