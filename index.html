@@ -678,6 +678,9 @@ $('exportPDF').onclick = () => {
         ? fechasConLluvia[fechasConLluvia.length - 1]
         : '';
 // Período máximo continuo sin lluvia
+// Solo considera consecutivos los días que realmente tienen registro.
+// Si falta una fecha, la racha se interrumpe.
+
 const fechasOrdenadasPDF = [...lluviaPorFecha.entries()]
     .sort((a,b) => a[0].localeCompare(b[0]));
 
@@ -686,17 +689,36 @@ let rachaActualPDF = 0;
 let inicioRachaPDF = '';
 let inicioPeriodoMaxPDF = '';
 let finPeriodoMaxPDF = '';
+let fechaAnteriorPDF = '';
 
 fechasOrdenadasPDF.forEach(([fecha, mm]) => {
 
+    // Verificar si esta fecha es consecutiva respecto de la anterior
+    let esConsecutivaPDF = false;
+
+    if (fechaAnteriorPDF) {
+        const anteriorPDF = new Date(fechaAnteriorPDF + 'T00:00:00');
+        const actualPDF = new Date(fecha + 'T00:00:00');
+
+        const diferenciaDiasPDF = Math.round(
+            (actualPDF - anteriorPDF) / (1000 * 60 * 60 * 24)
+        );
+
+        esConsecutivaPDF = diferenciaDiasPDF === 1;
+    }
+
     if (mm === 0) {
 
-        if (rachaActualPDF === 0) {
+        // Iniciar nueva racha si es el primer registro
+        // o si la fecha anterior no fue consecutiva
+        if (rachaActualPDF === 0 || !esConsecutivaPDF) {
+            rachaActualPDF = 1;
             inicioRachaPDF = fecha;
+        } else {
+            rachaActualPDF++;
         }
 
-        rachaActualPDF++;
-
+        // Guardar la racha máxima encontrada
         if (rachaActualPDF > periodoMaxSinLluviaPDF) {
             periodoMaxSinLluviaPDF = rachaActualPDF;
             inicioPeriodoMaxPDF = inicioRachaPDF;
@@ -704,9 +726,13 @@ fechasOrdenadasPDF.forEach(([fecha, mm]) => {
         }
 
     } else {
+
+        // Una lluvia > 0 mm rompe la racha
         rachaActualPDF = 0;
         inicioRachaPDF = '';
     }
+
+    fechaAnteriorPDF = fecha;
 });
 
 // Días desde la última lluvia
