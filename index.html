@@ -1231,29 +1231,36 @@ if (
   doc.setFontSize(8);
   doc.setTextColor(70);
 
-  doc.text(
+// Fechas del período máximo sin lluvia
+doc.setFont('helvetica','normal');
+doc.setFontSize(8);
+doc.setTextColor(70);
+
+// Fecha de inicio del período seco
+doc.text(
     fechaTexto(inicioPeriodoMaxPDF),
     xInicioSeco,
     204,
-    {align:'center'}
-  );
+    {align:'left'}
+);
 
-  doc.text(
+// Fecha de finalización del período seco
+doc.text(
     fechaTexto(finPeriodoMaxPDF),
-    xFinSeco,
+    xFinSeco + 3,
     204,
-    {align:'center'}
-  );
-  // Identificar claramente el final del período seco
-doc.setFont('helvetica','normal');
+    {align:'left'}
+);
+
+// Etiqueta del final del período seco
 doc.setFontSize(7);
 doc.setTextColor(90);
 
 doc.text(
-  'Fin período seco',
-  xFinSeco,
-  209,
-  {align:'center'}
+    'Fin período seco',
+    xFinSeco + 3,
+    211,
+    {align:'left'}
 );
 }
 
