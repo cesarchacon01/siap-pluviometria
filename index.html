@@ -1245,21 +1245,26 @@ doc.text(
 );
 
 // Fecha de finalización del período seco
+doc.setFont('helvetica','normal');
+doc.setFontSize(8);
+doc.setTextColor(70);
+
 doc.text(
     fechaTexto(finPeriodoMaxPDF),
-    xFinSeco + 3,
-    204,
+    xFinSeco + 4,
+    yTL + 9,
     {align:'left'}
 );
 
 // Etiqueta del final del período seco
+doc.setFont('helvetica','bold');
 doc.setFontSize(7);
 doc.setTextColor(90);
 
 doc.text(
     'Fin período seco',
-    xFinSeco + 3,
-    211,
+    xFinSeco + 4,
+    yTL + 14,
     {align:'left'}
 );
 }
