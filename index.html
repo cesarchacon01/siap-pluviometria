@@ -1371,41 +1371,7 @@ if (ultimaLluvia) {
   );
 }
 
-  const xUltimaLluvia =
-    posicionFechaTL(ultimaLluvia);
-
-  doc.setFillColor(40,120,180);
-
-  doc.circle(
-    xUltimaLluvia,
-    yTL,
-    3,
-    'F'
-  );
-
-  // Etiqueta superior
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(8);
-  doc.setTextColor(40,90,140);
-
-  doc.text(
-    'Última lluvia',
-    xUltimaLluvia,
-    176,
-    {align:'center'}
-  );
-
-  doc.setFont('helvetica','normal');
-
-  doc.text(
-    fechaTexto(ultimaLluvia),
-    xUltimaLluvia,
-    181,
-    {align:'center'}
-  );
-}
-
-
+  
 // --------------------------------------------------
 // EXPLICACIÓN
 // --------------------------------------------------
