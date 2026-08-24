@@ -1218,12 +1218,31 @@ if (
   doc.setFontSize(12);
   doc.setTextColor(0);
 
-  doc.text(
+  // Posición inteligente de la etiqueta del período seco
+let xEtiquetaPeriodoSeco = (xInicioSeco + xFinSeco) / 2;
+
+// Si la última lluvia está muy cerca del final del período seco,
+// desplazar ligeramente la etiqueta hacia la izquierda
+if (ultimaLluvia) {
+    const xUltimaLluviaEtiqueta = posicionFechaTL(ultimaLluvia);
+
+    if (Math.abs(xUltimaLluviaEtiqueta - xFinSeco) < 18) {
+        xEtiquetaPeriodoSeco -= 10;
+    }
+}
+
+// Mantener la etiqueta dentro de la línea de tiempo
+xEtiquetaPeriodoSeco = Math.max(
+    xInicioTL + 15,
+    Math.min(xEtiquetaPeriodoSeco, xFinTL - 15)
+);
+
+doc.text(
     `${periodoMaxSinLluviaPDF} días sin lluvia`,
-    (xInicioSeco + xFinSeco) / 2,
+    xEtiquetaPeriodoSeco,
     184,
     {align:'center'}
-  );
+);
 
 
   // Fechas del período seco
