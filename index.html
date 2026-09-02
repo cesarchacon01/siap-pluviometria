@@ -270,7 +270,26 @@ if(panelGraficaGeneral) panelGraficaGeneral.style.display=(nivel==='municipal')?
     texto+=` El período continuo más prolongado con registros de 0 mm fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
   }
   if(ultimaLluvia){
-    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}; al cierre del período seleccionado han transcurrido ${diasDesdeUltimaLluvia} días calendario desde esa lluvia.`;
+
+    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}`;
+
+    if(puntosConReporteUltimaLluvia > 0){
+
+        texto+=` y se presentó en ${puntosConLluviaUltimaLluvia} de los ${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %),`;
+
+        if(porcentajeCoberturaUltimaLluvia < 50){
+            texto+=` lo que evidencia una distribución territorial limitada de la precipitación.`;
+        }else if(porcentajeCoberturaUltimaLluvia < 80){
+            texto+=` mostrando una distribución territorial parcial de la precipitación.`;
+        }else{
+            texto+=` mostrando una distribución territorial amplia de la precipitación.`;
+        }
+
+    }else{
+        texto+=`.`;
+    }
+
+    texto+=` Al cierre del período seleccionado ${diasDesdeUltimaLluvia === 1 ? 'ha transcurrido 1 día calendario' : `han transcurrido ${diasDesdeUltimaLluvia} días calendario`} desde esa lluvia.`;
 }
   lectura.textContent=texto;
 }                  
