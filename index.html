@@ -984,8 +984,13 @@ if (ultimaLluvia && hasta) {
             ? `${fechaTexto(inicioPeriodoMaxPDF)} - ${fechaTexto(finPeriodoMaxPDF)}`
             : 'Sin registro'
     ],
-    ['Días desde la última lluvia', `${diasDesdeUltimaLluviaPDF} días`],
-    ['Última lluvia registrada', fechaTexto(ultimaLluvia)]
+   ['Días desde la última lluvia', `${diasDesdeUltimaLluviaPDF} días`],
+['Última lluvia registrada', fechaTexto(ultimaLluvia)],
+['Cobertura de la última lluvia',
+  ultimaLluvia && puntosConReporteUltimaLluvia > 0
+    ? `${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos (${porcentajePuntosUltimaLluvia.toFixed(1)} %)`
+    : 'Sin registro'
+]
 ];
 
     doc.setFontSize(10);
