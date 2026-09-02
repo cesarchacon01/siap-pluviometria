@@ -984,7 +984,11 @@ if (ultimaLluvia && hasta) {
             ? `${fechaTexto(inicioPeriodoMaxPDF)} - ${fechaTexto(finPeriodoMaxPDF)}`
             : 'Sin registro'
     ],
-   ['Días desde la última lluvia', `${diasDesdeUltimaLluviaPDF} días`],
+  ['Días desde la última lluvia',
+  diasDesdeUltimaLluviaPDF === 1
+    ? '1 día'
+    : `${diasDesdeUltimaLluviaPDF} días`
+],
 ['Última lluvia registrada', fechaTexto(ultimaLluvia)],
 ['Cobertura de la última lluvia',
   ultimaLluvia && puntosConReporteUltimaLluvia > 0
@@ -1031,13 +1035,32 @@ if (ultimaLluvia && hasta) {
     (inicioPeriodoMaxPDF && finPeriodoMaxPDF
         ? `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. `
         : `. `) +
-    (
-    diasDesdeUltimaLluviaPDF === 0
-        ? `Al cierre del período analizado, la última lluvia registrada coincidió con la fecha de cierre (${fechaTexto(ultimaLluvia)}).`
-        : diasDesdeUltimaLluviaPDF === 1
-            ? `Al cierre del período analizado había transcurrido 1 día desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`
-            : `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días desde la última lluvia registrada, ocurrida el ${fechaTexto(ultimaLluvia)}.`
-);
+   (
+  ultimaLluvia
+    ? (
+        `La última lluvia registrada ocurrió el ${fechaTexto(ultimaLluvia)}` +
+        (
+          puntosConReporteUltimaLluvia > 0
+            ? ` y se presentó en ${puntosConLluviaUltimaLluvia} de los ${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día (${porcentajePuntosUltimaLluvia.toFixed(1)} %)` +
+              (
+                porcentajePuntosUltimaLluvia < 50
+                  ? `, lo que evidencia una distribución territorial limitada de la precipitación. `
+                  : porcentajePuntosUltimaLluvia < 80
+                    ? `, mostrando una distribución territorial parcial de la precipitación. `
+                    : `, mostrando una distribución territorial amplia de la precipitación. `
+              )
+            : `. `
+        ) +
+        (
+          diasDesdeUltimaLluviaPDF === 0
+            ? `La última lluvia coincide con la fecha de cierre del período analizado.`
+            : diasDesdeUltimaLluviaPDF === 1
+              ? `Al cierre del período analizado había transcurrido 1 día calendario desde esa lluvia.`
+              : `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días calendario desde esa lluvia.`
+        )
+      )
+    : `No se identificaron registros de lluvia durante el período analizado.`
+)
     const lineas = doc.splitTextToSize(lectura,170);
 
     doc.text(lineas,20,y);
