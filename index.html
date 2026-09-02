@@ -1063,7 +1063,10 @@ if (ultimaLluvia && hasta) {
 )
     const lineas = doc.splitTextToSize(lectura,170);
 
-    doc.text(lineas,20,y);
+doc.text(lineas,20,y,{
+    align:'justify',
+    maxWidth:170
+});
 // ==============================================
 // INTERPRETACIÓN AGROCLIMÁTICA
 // ==============================================
@@ -1191,22 +1194,33 @@ if (ultimaLluvia) {
 // Dividir el texto para ajustarlo al ancho del PDF
 const lineasAgro = doc.splitTextToSize(textoAgro,170);
 
-doc.text(lineasAgro,20,y);
+doc.text(lineasAgro,20,y,{
+    align:'justify',
+    maxWidth:170
+});
+y += (lineasAgro.length * 5) + 8;
 // Pie de página
+// Si el contenido invade el espacio reservado para el pie,
+// crear una nueva página antes de colocar el pie.
+if (y > 270) {
+    doc.addPage();
+}
+
 doc.setFontSize(8);
 doc.setTextColor(90);
-      doc.text(
-        'Fuente: Monitoreo pluviométrico comunitario.',
-        20,
-        282
-    );
 
-    doc.text(
-        'CRS - MAGA',
-        190,
-        282,
-        {align:'right'}
-    );
+doc.text(
+    'Fuente: Monitoreo pluviométrico comunitario.',
+    20,
+    287
+);
+
+doc.text(
+    'CRS - MAGA',
+    190,
+    287,
+    {align:'right'}
+);
 // ==================================================
 // PÁGINA 2 - COMPORTAMIENTO DE LA PRECIPITACIÓN
 // ==================================================
