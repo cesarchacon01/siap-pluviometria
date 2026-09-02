@@ -179,6 +179,7 @@ for(const p of pts){
 const max=Math.max(0,...d.map(r=>Number(r.mm)||0));$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kPeriodoSinLluvia').textContent=periodoSinLluvia.toLocaleString('es-GT')+' días';
 $('kFechasPeriodoSinLluvia').textContent=(inicioPeriodoMax&&finPeriodoMax)?fmtDate(inicioPeriodoMax).replace(' 2026','')+' – '+fmtDate(finPeriodoMax):'';              
 $('kUltimaLluvia').textContent=ultimaLluvia?fmtDate(ultimaLluvia.fecha):'Sin lluvia';
+/*                  
 // Cobertura territorial de la última lluvia registrada
 let puntosConReporteUltimaLluvia = 0;
 let puntosConLluviaUltimaLluvia = 0;
@@ -219,6 +220,7 @@ $('kCoberturaUltimaLluvia').textContent =
   ultimaLluvia && puntosConReporteUltimaLluvia > 0
     ? `Registrada en ${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos con reporte (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %)`
     : '';
+*/
 const desde=$('fDesde').value;
 const hasta=$('fHasta').value;const diasDesdeUltimaLluvia=(ultimaLluvia&&hasta)
   ?Math.max(0,Math.floor((new Date(hasta+'T00:00:00')-new Date(ultimaLluvia.fecha+'T00:00:00'))/86400000))
