@@ -677,6 +677,39 @@ $('exportPDF').onclick = () => {
     const ultimaLluvia = fechasConLluvia.length
         ? fechasConLluvia[fechasConLluvia.length - 1]
         : '';
+  // Cobertura espacial de la última lluvia registrada
+let puntosConReporteUltimaLluvia = 0;
+let puntosConLluviaUltimaLluvia = 0;
+let porcentajePuntosUltimaLluvia = 0;
+
+if (ultimaLluvia) {
+
+    const registrosUltimaLluvia = d.filter(
+        r => r.fecha === ultimaLluvia
+    );
+
+    const puntosReportados = new Set(
+        registrosUltimaLluvia
+            .map(r => r.responsable)
+            .filter(Boolean)
+    );
+
+    const puntosConLluvia = new Set(
+        registrosUltimaLluvia
+            .filter(r => (Number(r.mm) || 0) > 0)
+            .map(r => r.responsable)
+            .filter(Boolean)
+    );
+
+    puntosConReporteUltimaLluvia = puntosReportados.size;
+    puntosConLluviaUltimaLluvia = puntosConLluvia.size;
+
+    porcentajePuntosUltimaLluvia =
+        puntosConReporteUltimaLluvia > 0
+            ? (puntosConLluviaUltimaLluvia /
+               puntosConReporteUltimaLluvia) * 100
+            : 0;
+}
 // Período máximo continuo sin lluvia
 // Solo considera consecutivos los días que realmente tienen registro.
 // Si falta una fecha, la racha se interrumpe.
