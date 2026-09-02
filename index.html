@@ -196,12 +196,7 @@ if (ultimaLluvia) {
   registrosUltimaFecha.forEach(r => {
 
     // Identifica cada punto de monitoreo
-    const punto =
-      (r.municipio || '') + '|' +
-      (r.comunidad || '') + '|' +
-      (r.caserio || '') + '|' +
-      (r.informante || '');
-
+const punto = key(r);
     puntosReportados.add(punto);
 
     if (Number(r.mm) > 0) {
