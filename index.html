@@ -493,6 +493,41 @@ const lluviasResumen = d
 const ultimaLluviaResumen = lluviasResumen.length
   ? lluviasResumen[lluviasResumen.length-1].fecha
   : '';
+  // Cobertura espacial de la última lluvia
+let puntosConReporteUltimaLluvia = 0;
+let puntosConLluviaUltimaLluvia = 0;
+let porcentajeCoberturaUltimaLluvia = 0;
+
+if (ultimaLluviaResumen) {
+
+  // Registros correspondientes al día de la última lluvia
+  const registrosUltimaFecha = d.filter(
+    r => r.fecha === ultimaLluviaResumen
+  );
+
+  // Identificar puntos de monitoreo únicos
+  const obtenerPunto = r =>
+    `${r.municipio || ''}|${r.comunidad || ''}|${r.caserio || ''}|${r.responsable || r.informante || ''}`;
+
+  const puntosReportados = new Set(
+    registrosUltimaFecha.map(obtenerPunto)
+  );
+
+  const puntosConLluvia = new Set(
+    registrosUltimaFecha
+      .filter(r => Number(r.mm) > 0)
+      .map(obtenerPunto)
+  );
+
+  puntosConReporteUltimaLluvia = puntosReportados.size;
+  puntosConLluviaUltimaLluvia = puntosConLluvia.size;
+
+  porcentajeCoberturaUltimaLluvia =
+    puntosConReporteUltimaLluvia > 0
+      ? (puntosConLluviaUltimaLluvia /
+          puntosConReporteUltimaLluvia) * 100
+      : 0;
+}
 // Días desde la última lluvia
 let diasDesdeUltimaLluviaResumen = 0;
 // Fechas seleccionadas
