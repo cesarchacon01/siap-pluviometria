@@ -226,7 +226,11 @@ const hasta=$('fHasta').value;const diasDesdeUltimaLluvia=(ultimaLluvia&&hasta)
   ?Math.max(0,Math.floor((new Date(hasta+'T00:00:00')-new Date(ultimaLluvia.fecha+'T00:00:00'))/86400000))
   :0;
 console.log('PRUEBA ANTES DE DIAS');
-$('kDiasDesdeUltimaLluvia').textContent=diasDesdeUltimaLluvia.toLocaleString('es-GT')+' días';
+const elDiasDesdeUltimaLluvia = $('kDiasDesdeUltimaLluvia');
+if (elDiasDesdeUltimaLluvia) {
+    elDiasDesdeUltimaLluvia.textContent =
+        diasDesdeUltimaLluvia.toLocaleString('es-GT') + ' días';
+}
 const diasPeriodo=(desde&&hasta)?Math.floor((new Date(hasta+'T00:00:00')-new Date(desde+'T00:00:00'))/86400000)+1:0;
 const esperados=groups.size*diasPeriodo;
 const registrosUnicos=new Set(d.map(r=>`${key(r)}|${r.fecha}`)).size;
