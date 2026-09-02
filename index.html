@@ -1199,26 +1199,30 @@ doc.text(lineasAgro,20,y,{
     maxWidth:170
 });
 y += (lineasAgro.length * 5) + 8;
-// Pie de página
-// Si el contenido invade el espacio reservado para el pie,
-// crear una nueva página antes de colocar el pie.
-if (y > 270) {
-    doc.addPage();
-}
+// ==============================================
+// PIE DE PÁGINA - PÁGINA 1
+// ==============================================
 
+// Línea separadora
+doc.setDrawColor(210);
+doc.line(20, 282, 190, 282);
+
+// Fuente
+doc.setFont('helvetica','normal');
 doc.setFontSize(8);
 doc.setTextColor(90);
 
 doc.text(
     'Fuente: Monitoreo pluviométrico comunitario.',
     20,
-    287
+    288
 );
 
+// Instituciones
 doc.text(
     'CRS - MAGA',
     190,
-    287,
+    288,
     {align:'right'}
 );
 // ==================================================
