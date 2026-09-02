@@ -1138,6 +1138,7 @@ if (periodoMaxSinLluviaPDF <= 5) {
 // Situación al cierre del período
 if (ultimaLluvia) {
 
+    // Tiempo transcurrido desde la última lluvia
     if (diasDesdeUltimaLluviaPDF === 0) {
 
         textoAgro +=
@@ -1147,14 +1148,43 @@ if (ultimaLluvia) {
     } else if (diasDesdeUltimaLluviaPDF === 1) {
 
         textoAgro +=
-            ` Al cierre del período había transcurrido 1 día desde la última lluvia ` +
-            `registrada.`;
+            ` Al cierre del período había transcurrido 1 día desde la última lluvia registrada.`;
 
     } else {
 
         textoAgro +=
             ` Al cierre del período habían transcurrido ` +
             `${diasDesdeUltimaLluviaPDF} días desde la última lluvia registrada.`;
+    }
+
+    // Cobertura territorial de la última lluvia
+    if (puntosConReporteUltimaLluvia > 0) {
+
+        textoAgro +=
+            ` Esta precipitación se presentó en ${puntosConLluviaUltimaLluvia} de los ` +
+            `${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día ` +
+            `(${porcentajePuntosUltimaLluvia.toFixed(1)} %).`;
+
+        if (porcentajePuntosUltimaLluvia < 50) {
+
+            textoAgro +=
+                ` Esto indica que el evento tuvo una distribución territorial limitada ` +
+                `y no necesariamente representa una recuperación generalizada de las ` +
+                `precipitaciones en el territorio monitoreado.`;
+
+        } else if (porcentajePuntosUltimaLluvia < 80) {
+
+            textoAgro +=
+                ` Esto indica una distribución territorial parcial de la precipitación, ` +
+                `por lo que las condiciones de lluvia pueden variar entre los diferentes ` +
+                `puntos del territorio monitoreado.`;
+
+        } else {
+
+            textoAgro +=
+                ` Esto indica una distribución territorial amplia de la precipitación ` +
+                `entre los puntos de monitoreo que reportaron ese día.`;
+        }
     }
 }
 
