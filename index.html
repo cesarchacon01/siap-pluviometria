@@ -589,6 +589,12 @@ const datosResumen = [
 ['Días desde la última lluvia',diasDesdeUltimaLluviaResumen],
  ['Última lluvia registrada',
   ultimaLluviaResumen ? fmtDate(ultimaLluviaResumen) : ''
+],
+
+['Cobertura de la última lluvia',
+  ultimaLluviaResumen && puntosConReporteUltimaLluvia > 0
+    ? `Registrada en ${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos con reporte (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %)`
+    : 'Sin información'
 ]
 ];
 
