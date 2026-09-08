@@ -39,6 +39,12 @@ def nombre_limpio(valor):
     valor = str(valor or "").strip()
     return valor.replace("_", " ").title()
 
+def limpiar_caserio(caserio_limpio, comunidad_limpia):
+    prefijo = comunidad_limpia + " "
+    if caserio_limpio.startswith(prefijo) and len(caserio_limpio) > len(prefijo):
+        return caserio_limpio[len(prefijo):]
+    return caserio_limpio
+
 url = f"{BASE}/api/v2/assets/{ASSET_UID}/data/?limit=1000"
 raw = []
 while url:
@@ -54,10 +60,13 @@ for r in raw:
     except (TypeError, ValueError):
         mm = 0.0
     fecha = str(pick_exact(r, FIELD_PRIORITY["fecha"]))[:10]
+    comunidad = nombre_limpio(pick_exact(r, FIELD_PRIORITY["comunidad"]))
+    caserio = nombre_limpio(pick_exact(r, FIELD_PRIORITY["caserio"]))
+    caserio = limpiar_caserio(caserio, comunidad)
     datos.append({
         "municipio": str(pick_exact(r, FIELD_PRIORITY["municipio"])).strip(),
-        "comunidad": nombre_limpio(pick_exact(r, FIELD_PRIORITY["comunidad"])),
-        "caserio": nombre_limpio(pick_exact(r, FIELD_PRIORITY["caserio"])),
+        "comunidad": comunidad,
+        "caserio": caserio,
         "responsable": str(pick_exact(r, FIELD_PRIORITY["responsable"])).strip(),
         "fecha": fecha,
         "mm": mm
