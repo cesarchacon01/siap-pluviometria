@@ -83,6 +83,9 @@ while url:
     raw.extend(page.get("results", []))
     url = page.get("next")
 
+print(f"DEBUG: se descargaron {len(raw)} registros crudos de Kobo")
+if raw:
+    print(f"DEBUG: primer registro tiene estas llaves: {list(raw[0].keys())}")
 
 # ---------------------------------------------------------------------------
 # Procesamiento: extracción de campos + deduplicación por envío más reciente
