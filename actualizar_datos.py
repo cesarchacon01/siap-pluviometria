@@ -45,18 +45,20 @@ def nombre_limpio(valor):
     return valor.replace("_", " ").title()
 
 
-def limpiar_caserio(caserio_limpio, comunidad_limpia):
-    prefijo = comunidad_limpia + " "
-    if caserio_limpio.startswith(prefijo) and len(caserio_limpio) > len(prefijo):
-        return caserio_limpio[len(prefijo):]
-    return caserio_limpio
-
-
 def normalizar_clave(texto):
     """Versión sin acentos y en minúsculas, solo para COMPARAR — nunca se guarda tal cual."""
     texto = unicodedata.normalize("NFD", str(texto or ""))
     texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
     return texto.strip().lower()
+
+
+def limpiar_caserio(caserio_limpio, comunidad_limpia):
+    comunidad_norm = normalizar_clave(comunidad_limpia)
+    caserio_norm = normalizar_clave(caserio_limpio)
+    prefijo_norm = comunidad_norm + " "
+    if caserio_norm.startswith(prefijo_norm) and len(caserio_norm) > len(prefijo_norm):
+        return caserio_limpio[len(prefijo_norm):]
+    return caserio_limpio
 
 
 # Nombres "canónicos" preferidos cuando existen variantes con/sin acento
