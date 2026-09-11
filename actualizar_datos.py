@@ -104,7 +104,10 @@ for r in raw:
     fecha = str(pick_exact(r, FIELD_PRIORITY["fecha"]))[:10]
 
     comunidad = nombre_limpio(pick_exact(r, FIELD_PRIORITY["comunidad"]))
-    caserio = nombre_limpio(pick_exact(r, FIELD_PRIORITY["caserio"]))
+    caserio_crudo = pick_exact(r, FIELD_PRIORITY["caserio"])
+    caserio = nombre_limpio(caserio_crudo)
+    if "tasharja" in comunidad.lower() or "tasharjá" in comunidad.lower():
+        print(f"RAW_DEBUG fecha={fecha!r} caserio_crudo_de_kobo={caserio_crudo!r} comunidad={comunidad!r} caserio_tras_nombre_limpio={caserio!r}")
     caserio = limpiar_caserio(caserio, comunidad)
 
     municipio = str(pick_exact(r, FIELD_PRIORITY["municipio"])).strip()
