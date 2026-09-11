@@ -78,6 +78,13 @@ def forma_preferida(valor_normalizado, valor_original):
     return NOMBRES_CANONICOS.get(valor_normalizado, valor_original)
 
 
+# Cambios de informante que sabemos son la MISMA persona/punto de monitoreo,
+# no un relevo real -- se fusionan bajo el nombre correcto indicado.
+# La clave va normalizada (sin acentos, minúsculas); el valor es el nombre
+# correcto que se guarda en datos.json.
+RESPONSABLES_CANONICOS = {
+    "sucely villeda": "Marta Mendez",
+}
 # ---------------------------------------------------------------------------
 # Descarga de todos los registros desde Kobo (paginado)
 # ---------------------------------------------------------------------------
@@ -112,6 +119,8 @@ for r in raw:
 
     municipio = str(pick_exact(r, FIELD_PRIORITY["municipio"])).strip()
     responsable = str(pick_exact(r, FIELD_PRIORITY["responsable"])).strip()
+    responsable_norm = normalizar_clave(responsable)
+    responsable = RESPONSABLES_CANONICOS.get(responsable_norm, responsable)
 
     comunidad_norm = normalizar_clave(comunidad)
     caserio_norm = normalizar_clave(caserio)
