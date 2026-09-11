@@ -54,10 +54,13 @@ def normalizar_clave(texto):
 
 def limpiar_caserio(caserio_limpio, comunidad_limpia):
     comunidad_norm = normalizar_clave(comunidad_limpia)
-    caserio_norm = normalizar_clave(caserio_limpio)
     prefijo_norm = comunidad_norm + " "
-    if caserio_norm.startswith(prefijo_norm) and len(caserio_norm) > len(prefijo_norm):
-        return caserio_limpio[len(prefijo_norm):]
+    while True:
+        caserio_norm = normalizar_clave(caserio_limpio)
+        if caserio_norm.startswith(prefijo_norm) and len(caserio_norm) > len(prefijo_norm):
+            caserio_limpio = caserio_limpio[len(prefijo_norm):]
+        else:
+            break
     return caserio_limpio
 
 
@@ -104,10 +107,7 @@ for r in raw:
     fecha = str(pick_exact(r, FIELD_PRIORITY["fecha"]))[:10]
 
     comunidad = nombre_limpio(pick_exact(r, FIELD_PRIORITY["comunidad"]))
-    caserio_crudo = pick_exact(r, FIELD_PRIORITY["caserio"])
-    caserio = nombre_limpio(caserio_crudo)
-    if "tasharja" in comunidad.lower() or "tasharjá" in comunidad.lower():
-        print(f"RAW_DEBUG fecha={fecha!r} caserio_crudo_de_kobo={caserio_crudo!r} comunidad={comunidad!r} caserio_tras_nombre_limpio={caserio!r}")
+    caserio = nombre_limpio(pick_exact(r, FIELD_PRIORITY["caserio"]))
     caserio = limpiar_caserio(caserio, comunidad)
 
     municipio = str(pick_exact(r, FIELD_PRIORITY["municipio"])).strip()
