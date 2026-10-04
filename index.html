@@ -1,1761 +1,1254 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Generador Analítico de Pluviometría</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SIAP Pluviometría · Chiquimula</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--navy:#0f2742;--blue:#1565c0;--green:#14845c;--bg:#eef3f7;--white:#fff;--muted:#667085;--border:#d8e1e8;--zero:#d9e0e6}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#17212b}.wrap{max-width:1500px;margin:auto;padding:22px}.hero{background:linear-gradient(135deg,var(--navy),#174f78);color:white;border-radius:18px;padding:24px 28px;display:flex;justify-content:space-between;gap:20px;align-items:center}.hero h1{margin:4px 0;font-size:30px}.hero p{margin:0;color:#d9e8f5}.tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:#b9d9f2}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn,.file-label{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;background:white;color:var(--navy);display:inline-flex;align-items:center;gap:8px}.btn.primary,.file-label{background:#24a66f;color:white}.btn.secondary{background:#eaf2f8}.file-label input{display:none}.panel{background:white;border:1px solid var(--border);border-radius:15px;padding:18px;margin-top:18px;box-shadow:0 3px 14px rgba(15,39,66,.05)}.filters{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:12px}.field label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:6px}.field select,.field input{width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;background:white}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}.kpi{background:white;border:1px solid var(--border);border-radius:14px;padding:16px}.kpi .v{font-size:25px;font-weight:850;color:var(--navy)}.kpi .l{font-size:12px;color:var(--muted);margin-top:5px}.grid2{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-top:18px}.chartbox{height:360px}.legend{display:flex;gap:18px;align-items:center;font-size:13px}.dot{width:14px;height:14px;border-radius:4px;display:inline-block;margin-right:6px;vertical-align:-2px;border:1px solid #ccd3da}.dot.rain{background:var(--green)}.dot.zero{background:var(--zero)}.observer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}.observer{background:white;border:1px solid var(--border);border-radius:15px;padding:17px}.observer h3{margin:0 0 4px;font-size:18px}.meta{font-size:12px;color:var(--muted)}.stats{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0;font-size:12px}.stats b{color:var(--navy)}.smallchart{height:255px}.calendar{display:grid;grid-template-columns:repeat(auto-fill,minmax(18px,1fr));gap:4px;margin-top:12px}.day{height:18px;border-radius:4px;border:1px solid #d8dee4;background:var(--zero)}.day.rain{background:var(--green)!important;border-color:var(--green)!important}.day[title]{cursor:help}.empty{text-align:center;padding:40px;color:var(--muted)}.notice{font-size:12px;color:var(--muted);margin-top:10px}.rank{width:100%;border-collapse:collapse}.rank th,.rank td{padding:9px;border-bottom:1px solid #edf0f3;text-align:left;font-size:12px}.rank th{color:var(--muted);text-transform:uppercase;font-size:10px}.right{text-align:right!important}@media(max-width:1100px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}.observer-grid{grid-template-columns:1fr}}@media(max-width:650px){.wrap{padding:10px}.hero{align-items:flex-start;flex-direction:column}.filters{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:1fr 1fr}.hero h1{font-size:24px}}
+:root{
+  --navy:#0f2742; --navy2:#174f78; --blue:#1565c0; --green:#14845c; --green2:#24a66f;
+  --bg:#eef3f7; --card:#fff; --line:#d8e1e8; --muted:#667085; --ink:#0f2742;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.45;font-size:15px}
+[hidden]{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 16px 40px}
+h1,h2,h3,h4,p{margin:0}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.i.g{width:28px;height:28px}
+
+/* Estados de riesgo: color + texto + ícono (nunca solo color) */
+.e-normal{--fg:#27500a;--bg2:#eaf3de;--bd:#c0dd97;--sol:#3b6d11}
+.e-atencion{--fg:#6b5200;--bg2:#fff6d6;--bd:#efd682;--sol:#b58900}
+.e-alerta{--fg:#8a3d07;--bg2:#fdebd9;--bd:#f2b98a;--sol:#d9660f}
+.e-critico{--fg:#791f1f;--bg2:#fdeaea;--bd:#f0a3a3;--sol:#a32d2d}
+.e-sindatos{--fg:#5f5e5a;--bg2:#f1efe8;--bd:#c9c6bb;--sol:#888780}
+.chip{display:inline-block;background:var(--bg2);color:var(--fg);border:1px solid var(--bd);font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.banner{background:var(--bg2);border:1px solid var(--bd);color:var(--fg);border-radius:16px;padding:16px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.banner .bt{font-size:18px;font-weight:800;line-height:1.25}
+.banner .bd{font-size:14px;margin-top:4px;max-width:70ch}
+.banner .bi{flex:1;min-width:230px}
+.balde{width:48px;height:84px;border:3px solid #667085;border-top:none;border-radius:0 0 14px 14px;position:relative;background:rgba(255,255,255,.75);overflow:hidden}
+.balde i{position:absolute;left:0;right:0;bottom:0;background:var(--sol);transition:height .5s ease}
+.balde-w{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:600}
+
+/* Cabecera */
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:20px;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.hero-l{display:flex;align-items:center;gap:14px;min-width:0;flex-wrap:wrap}
+.hero-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.eyebrow{font-size:13px;font-weight:600;color:#b9d9f2}
+.hero h1{font-size:clamp(21px,3.4vw,29px);font-weight:800;line-height:1.15;margin-top:2px}
+.hero p{margin-top:6px;color:#d9e8f5;font-size:14px;max-width:62ch}
+.logos{display:flex;gap:12px;align-items:center}
+.logos img{height:46px;width:auto;background:rgba(255,255,255,.0)}
+.hero-d{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.logos.sm img{height:36px}
+.hero-centro{display:block;padding:26px 26px 24px}
+.hero-centro .logos{justify-content:flex-start;margin-bottom:14px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:11px;padding:10px 15px;font-family:inherit;font-size:13.5px;font-weight:700;line-height:1;cursor:pointer;background:#fff;color:var(--navy);text-decoration:none}
+.btn:hover{filter:brightness(.96)}
+.btn.verde{background:var(--green2);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.15);color:#fff}
+.btn.wa{background:#1f9d55;color:#fff}
+.btn.claro{background:#eaf2f8;color:var(--navy)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,tr[tabindex]:focus-visible,.opcion:focus-visible,.tile:focus-visible{outline:3px solid #7fb5ff;outline-offset:2px}
+
+/* Tarjetas */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.card h2{font-size:17px;font-weight:800}
+.card h3{font-size:16px;font-weight:800}
+.sub{font-size:13px;color:var(--muted)}
+.nota{font-size:12.5px;color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.sec{font-size:16px;font-weight:800;margin:6px 2px 0}
+.sec small{font-weight:500;color:var(--muted);font-size:13px;margin-left:6px}
+
+/* Filtros */
+.sel{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:12px;align-items:end}
+.fld label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.fld select,.fld input{width:100%;font-family:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-height:40px}
+.fld .fijo{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#eaf2f8;font-weight:700;font-size:14px;min-height:40px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.fld.per{grid-column:1/-1}
+.chips button{font-family:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;min-height:40px}
+.chips button[aria-pressed="true"]{background:#eaf2f8;color:var(--navy);border-color:#9fc3e0}
+
+/* Indicadores */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.kpi b{display:block;font-size:24px;font-weight:800;line-height:1.15}
+.kpi span{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.kpi.e-alerta b,.kpi.e-critico b,.kpi.e-atencion b{color:var(--fg)}
+details.mas{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 18px}
+details.mas summary{cursor:pointer;font-weight:700;font-size:14px}
+details.mas .kpis{margin-top:12px}
+
+/* Gráfica (misma que la actual: barras de lluvia diaria + línea de acumulado) */
+.lect{max-width:90ch;color:#344054}
+.lect p{margin-top:10px}
+.lect b{color:var(--ink)}
+.chartbox{position:relative;height:340px;margin-top:8px}
+.chartbox.sm{height:250px}
+.leer{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-top:12px}
+.leer div{display:flex;align-items:center;gap:12px;border-radius:12px;padding:10px 14px;font-size:14px}
+.leer .l1{background:#f1f8f4}.leer .l2{background:#f1f6fc}
+.leer .m1{width:6px;height:28px;background:#14845c;border-radius:2px;flex-shrink:0}
+.leer .m2{width:28px;height:4px;background:#1565c0;border-radius:2px;flex-shrink:0}
+
+/* Línea de tiempo */
+.leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin:6px 0 12px}
+.leyenda i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.tl{display:flex;gap:18px 34px;flex-wrap:wrap}
+.tl h4{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.tl .t{display:flex;gap:2px}
+.tl .t i{display:block;width:3px;height:18px;background:#d8dde3;border-radius:1px}
+.tl .t i.r{background:#14845c}
+.tl .t i.n{background:#f3f5f7;outline:1px dashed #cfd5dc;outline-offset:-1px}
+
+/* Tablas */
+.scroll{overflow:auto;max-height:440px;border-radius:10px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.tbl th{position:sticky;top:0;background:#fff;text-align:left;font-size:12.5px;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px;border-bottom:1px solid #edf0f3;vertical-align:middle}
+.tbl tr[data-com],.tbl tr[data-cas]{cursor:pointer}
+.tbl tr[data-com]:hover,.tbl tr[data-cas]:hover{background:#f6f9fc}
+.tbl .sub{font-size:12.5px}
+.barra{display:flex;align-items:center;gap:8px;min-width:110px}
+.barra span{display:block;width:64px;height:9px;background:#edf0f3;border-radius:5px;overflow:hidden;flex-shrink:0}
+.barra span i{display:block;height:100%;background:var(--sol,#667085)}
+.inf{list-style:none;margin:0;padding:0;max-height:340px;overflow:auto}
+.inf li{display:flex;justify-content:space-between;gap:12px;padding:9px 4px;border-bottom:1px solid #edf0f3;font-size:14px}
+.inf li small{display:block;color:var(--muted);font-size:12.5px}
+
+/* Municipios */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}
+.tile{display:block;width:100%;text-align:left;font-family:inherit;background:var(--bg2);border:1px solid var(--bd);color:var(--fg);border-radius:14px;padding:12px 14px;cursor:pointer}
+.tile b{display:block;font-size:15px}
+.tile span{display:block;font-size:13px;margin:2px 0 8px}
+.tile:hover{filter:brightness(.97)}
+
+/* Inicio */
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:10px}
+.opcion{display:flex;flex-direction:column;gap:8px;text-align:left;font-family:inherit;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 20px;cursor:pointer;color:var(--ink)}
+.opcion:hover{border-color:#9fc3e0}
+.opcion.verde{border:2px solid var(--green2)}
+.opcion h3{font-size:19px;font-weight:800}
+.opcion p{font-size:14px;color:var(--muted)}
+.opcion .go{margin-top:auto;padding-top:8px;font-weight:800;font-size:14px;color:var(--navy)}
+.opcion.verde .go{color:var(--green)}
+.spark{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.spark svg{flex:1;min-width:220px;height:60px}
+.ribbon{background:#fff3cd;border-bottom:2px solid #e0b100;color:#5c4400;padding:10px 16px;font-size:14px;font-weight:600;text-align:center}
+
+/* Tarjetas por punto */
+.puntos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;margin-top:12px}
+.punto .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.punto .stats{font-size:13px;margin:10px 0 4px;color:#344054}
+.punto h4{font-size:13.5px;margin:12px 0 4px}
+.mas-btn{margin:14px auto 0;display:block}
+
+footer{margin-top:22px;font-size:13px;color:var(--muted)}
+footer details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px}
+footer summary{cursor:pointer;font-weight:700;color:var(--ink)}
+footer p{margin-top:8px;max-width:80ch}
+
+@media (max-width:640px){
+  .hero-d{align-items:flex-start}
+  .wrap{padding:10px 10px 32px}
+  .hero{padding:14px 16px;border-radius:16px}
+  .card{padding:14px}
+  .chartbox{height:280px}
+  .banner{padding:14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
-
-<script>
-/* SIAP visual patch: cumulative precipitation as continuous blue line */
-(function () {
-  if (typeof Chart !== 'undefined') {
-    Chart.defaults.elements.line.borderWidth = 3;
-    Chart.defaults.elements.line.tension = 0.22;
-    Chart.defaults.elements.line.fill = false;
-    Chart.defaults.elements.point.radius = 0;
-    Chart.defaults.elements.point.hoverRadius = 4;
-  }
-})();
-</script>
-
 </head>
-<body><div class="wrap">
-<section class="hero">
-  <div>
-    <div class="tag">Chiquimula · Monitoreo comunitario</div>
-    <h1>Generador Analítico de Pluviometría</h1>
-    <p>Identificación automática de informantes, fechas y comportamiento diario de la precipitación.</p>
-  </div>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12h14M5 12l6 6M5 12l6-6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0z"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2l4-4"/></symbol>
+  <symbol id="i-oct" viewBox="0 0 24 24"><path d="M8.7 3h6.6l4.7 4.7v6.6l-4.7 4.7h-6.6l-4.7-4.7v-6.6z"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 18a4.6 4.4 0 0 1 0-9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7"/><path d="M11 13v2m0 3v2m4-5v2m0 3v2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 13h5v7H3zM9.5 4h5v16h-5zM16 9h5v11h-5z"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z"/><path d="M9 10a.5.5 0 0 0 1 0v-1a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></symbol>
+</svg>
 
-  <div class="actions" style="display:flex;flex-direction:column;align-items:flex-end;gap:14px;">
-    
-    <div style="display:flex;align-items:center;gap:18px;">
-      <img src="crs-logo.png" alt="CRS" style="height:55px;width:auto;object-fit:contain;filter:brightness(0) invert(1);">
-      <img src="maga.png" alt="MAGA" style="height:55px;width:auto;object-fit:contain;">
+<div id="ribbonEjemplo" class="ribbon" hidden role="status">Estás viendo datos de ejemplo: no se pudo leer datos.json. No uses esta información para tomar decisiones.</div>
+
+<main class="wrap">
+
+<!-- ============ INICIO ============ -->
+<section id="pantallaInicio" class="pantalla" aria-labelledby="tInicio">
+  <header class="hero hero-centro">
+    <div class="logos"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="eyebrow">Chiquimula · Monitoreo comunitario de lluvia</div>
+    <h1 id="tInicio">Generador Analítico de Pluviometría</h1>
+    <p id="inicioSub"></p>
+  </header>
+  <div class="stack">
+    <div id="inicioAlerta" class="banner" role="status"></div>
+    <div class="card spark" id="inicioSpark"></div>
+    <h2 class="sec">¿Cómo quieres ver la información?</h2>
+    <div class="dos">
+      <button class="opcion verde" data-ir="comunitario" type="button">
+        <svg class="i g" style="color:var(--green2)" aria-hidden="true"><use href="#i-rain"/></svg>
+        <h3>Panel comunitario</h3>
+        <p>Mira cómo está la lluvia y la humedad de la tierra en tu comunidad, con palabras sencillas.</p>
+        <span class="go">Entrar al panel comunitario</span>
+      </button>
+      <button class="opcion" data-ir="municipal" type="button">
+        <svg class="i g" style="color:var(--blue)" aria-hidden="true"><use href="#i-chart"/></svg>
+        <h3>Panel municipal y departamental</h3>
+        <p>Compara municipios y comunidades, revisa las alertas y descarga informes en PDF y Excel.</p>
+        <span class="go">Entrar al panel municipal</span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMUNITARIO ============ -->
+<section id="panelComunitario" class="pantalla" aria-labelledby="comTitulo" hidden>
+  <header class="hero">
+    <div class="hero-l">
+      <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
+      <div><div class="eyebrow" id="comEyebrow">Vista comunitaria</div><h1 id="comTitulo">Mi comunidad</h1></div>
+    </div>
+    <div class="hero-d"><div class="logos sm"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-r">
+      <button class="btn wa" id="comWA" type="button"><svg class="i" aria-hidden="true"><use href="#i-wa"/></svg>Compartir por WhatsApp</button>
+      <button class="btn verde" id="comPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Descargar PDF</button>
+    </div></div>
+  </header>
+  <div class="stack">
+    <div class="card sel">
+      <div class="fld"><label for="comMun">Municipio</label><select id="comMun"></select></div>
+      <div class="fld"><label for="comCom">Mi comunidad</label><select id="comCom"></select></div>
+      <div class="fld per"><label id="lblPer">Período de la gráfica</label>
+        <div class="chips" id="comChips" role="group" aria-labelledby="lblPer">
+          <button type="button" data-p="todo" aria-pressed="true">Toda la temporada</button>
+          <button type="button" data-p="30" aria-pressed="false">Últimos 30 días</button>
+          <button type="button" data-p="mes" aria-pressed="false">Este mes</button>
+        </div>
+      </div>
+    </div>
+    <div id="comBanner" class="banner" role="status"></div>
+    <p class="nota" id="comNota"></p>
+    <div class="kpis" id="comKpis"></div>
+    <div class="card">
+      <h2>Lluvia diaria y acumulada</h2>
+      <p class="sub" id="comRango"></p>
+      <div class="chartbox"><canvas id="comChart" role="img" aria-label="Gráfica de barras de lluvia diaria con línea de lluvia acumulada"></canvas></div>
+      <div class="leer">
+        <div class="l1"><span class="m1"></span><span><b>Cada barra verde</b> es la lluvia que cayó en un día.</span></div>
+        <div class="l2"><span class="m2"></span><span><b>La línea azul</b> suma toda la lluvia desde que empezó el registro.</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Línea de tiempo de lluvia</h2>
+      <div class="leyenda"><span><i style="background:#14845c"></i>Con lluvia (más de 0 mm)</span><span><i style="background:#d8dde3"></i>Sin lluvia (0 mm)</span><span><i style="background:#f3f5f7;outline:1px dashed #cfd5dc;outline-offset:-1px"></i>Sin reporte</span></div>
+      <div class="tl" id="comTL"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MUNICIPAL ============ -->
+<section id="panelMunicipal" class="pantalla" aria-labelledby="munTitulo" hidden>
+  <header class="hero">
+    <div class="hero-l">
+      <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
+      <div><div class="eyebrow">Vista municipal y departamental</div><h1 id="munTitulo">Chiquimula</h1></div>
+    </div>
+    <div class="hero-d"><div class="logos sm"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-r">
+      <button class="btn" id="munXLS" type="button"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Descargar Excel</button>
+      <button class="btn verde" id="munPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Generar informe PDF</button>
+    </div></div>
+  </header>
+  <div class="stack">
+    <div class="card">
+      <div class="sel">
+        <div class="fld"><label>Departamento</label><div class="fijo">Chiquimula</div></div>
+        <div class="fld"><label for="fMun">Municipio</label><select id="fMun"></select></div>
+        <div class="fld"><label for="fCom">Comunidad</label><select id="fCom"></select></div>
+        <div class="fld"><label for="fCas">Caserío</label><select id="fCas"></select></div>
+        <div class="fld"><label for="fInf">Informante</label><select id="fInf"></select></div>
+        <div class="fld"><label for="fDesde">Desde</label><input type="date" id="fDesde"></div>
+        <div class="fld"><label for="fHasta">Hasta</label><input type="date" id="fHasta"></div>
+      </div>
+      <p class="nota" id="munBase" style="margin-top:10px"></p>
     </div>
 
-    <button class="btn" id="export">↓ Descargar reporte Excel</button>
-    <button class="btn" id="exportPDF">📄 Generar informe PDF</button>
+    <div id="munBanner" class="banner" role="status"></div>
+
+    <div class="kpis" id="munKpis"></div>
+    <details class="mas"><summary>Ver más indicadores del período</summary><div class="kpis" id="munKpis2"></div></details>
+
+    <div class="card">
+      <h2 id="munChartTitulo">Comportamiento promedio diario</h2>
+      <p class="sub" id="munRango"></p>
+      <div class="chartbox"><canvas id="munChart" role="img" aria-label="Gráfica de barras de lluvia diaria promedio con línea de lluvia acumulada"></canvas></div>
+    </div>
+
+    <div class="card">
+      <h2>Lectura del período</h2>
+      <div id="munLectura" class="lect"></div>
+    </div>
+
+    <div id="secTiles" class="card" hidden>
+      <h2>Municipios por nivel de riesgo</h2>
+      <p class="sub">Cada cuadro muestra cuántos puntos de monitoreo del municipio están en alerta o crítico. Toca uno para entrar.</p>
+      <div class="tiles" id="tilesMun"></div>
+    </div>
+
+    <div class="card">
+      <h2 id="riesgoTitulo">Comunidades por nivel de riesgo</h2>
+      <p class="sub">Ordenadas de mayor a menor riesgo. Toca una fila para ver su detalle.</p>
+      <div class="scroll" style="margin-top:8px"><table class="tbl" id="tablaRiesgo"></table></div>
+    </div>
+
+    <div class="card">
+      <h2>Acumulado por informante</h2>
+      <ul class="inf" id="listaInf" style="margin-top:6px"></ul>
+    </div>
+
+    <div>
+      <h2 class="sec">Análisis por comunidad e informante <small>cada tarjeta se genera desde los datos</small></h2>
+      <div class="leyenda" style="margin-top:8px"><span><i style="background:#14845c"></i>Con lluvia</span><span><i style="background:#d8dde3"></i>Sin lluvia</span><span><i style="background:#f3f5f7;outline:1px dashed #cfd5dc;outline-offset:-1px"></i>Sin reporte</span></div>
+      <div class="puntos" id="puntos"></div>
+      <button class="btn claro mas-btn" id="masPuntos" type="button" hidden>Mostrar más puntos</button>
+    </div>
   </div>
 </section>
-<section class="panel"><div class="filters"><div class="field"><label>Municipio</label><select id="fMunicipio"></select></div><div class="field"><label>Comunidad</label><select id="fComunidad"></select></div><div class="field"><label>Caserío</label><select id="fCaserio"></select></div><div class="field"><label>Informante</label><select id="fResponsable"></select></div><div class="field"><label>Desde</label><input type="date" id="fDesde"></div><div class="field"><label>Hasta</label><input type="date" id="fHasta"></div></div><div class="notice" id="status"></div></section>
-<section class="kpis"><div class="kpi"><div class="v" id="kInformantes">0</div><div class="l">Informantes identificados</div></div><div class="kpi"><div class="v" id="kRegistros">0</div><div class="l">Registros analizados</div></div><div class="kpi"><div class="v" id="kAcumulado">0 mm</div><div class="l">Precipitación promedio acumulada</div></div><div class="kpi"><div class="v" id="kConLluvia">0</div><div class="l">Días con registro de lluvia (&gt;0 mm)</div></div><div class="kpi"><div class="v" id="kSinLluvia">0</div><div class="l">Días con registro sin lluvia (0 mm)</div></div><div class="kpi"><div class="v" id="kMax">0 mm</div><div class="l">Máximo diario registrado</div></div><div class="kpi"><div class="v" id="kCobertura">0 %</div><div class="l">Cobertura de monitoreo</div></div><div class="kpi"><div class="v" id="kPeriodoSinLluvia">0 días</div><div class="l">Período máximo sin lluvia</div><div class="meta" id="kFechasPeriodoSinLluvia"></div></div>
-<div class="kpi">
-  <div class="v" id="kUltimaLluvia">—</div>
-  <div class="l">Última lluvia registrada</div>
-  <div class="meta" id="kCoberturaUltimaLluvia"></div>
-</div>
-</section>
-<section class="panel"><h2 style="margin-top:0">Lectura del período</h2><div id="lecturaPeriodo" class="notice">Analizando la información del período seleccionado...</div></section>
-  <section class="grid2"><div class="panel" id="panelGraficaGeneral"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><div><h2 style="margin:0">Comportamiento promedio diario municipal</h2><div class="meta" id="periodo"></div></div><div class="legend"><span><i class="dot rain"></i>Lluvia registrada (&gt;0 mm)</span><span><i class="dot zero"></i>Sin lluvia (0 mm)</span></div></div><div class="chartbox"><canvas id="globalChart"></canvas></div></div><div class="panel"><h2 style="margin-top:0">Acumulado por informante</h2><div style="max-height:340px;overflow:auto"><table class="rank"><thead><tr><th>Informante</th><th class="right">mm</th></tr></thead><tbody id="ranking"></tbody></table></div></div></section>
-<section class="panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:15px"><div><h2 style="margin:0">Análisis por comunidad e informante</h2><div class="meta">Cada tarjeta se genera automáticamente desde la estructura del Excel.</div></div><div class="legend"><span><i class="dot rain"></i>&gt; 0 mm</span><span><i class="dot zero"></i>0 mm</span></div></div></section>
-<div id="observers" class="observer-grid"></div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+
+<footer>
+  <p id="pie"></p>
+  <details style="margin-top:10px">
+    <summary>¿Cómo se estima la humedad del suelo?</summary>
+    <p id="metodo"></p>
+  </details>
+</footer>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
-const DEFAULT_DATA=[{"municipio":"San Juan Ermita","comunidad":"Sin datos","caserio":"Sin datos","responsable":"Sin informante","fecha":"2026-05-01","mm":0.0},{"municipio":"San Juan Ermita","comunidad":"Sin datos","caserio":"Sin datos","responsable":"Sin informante","fecha":"2026-05-02","mm":0.0}];
-  let allData=[...DEFAULT_DATA],globalChart=null,charts=[];
+'use strict';
+/* =====================================================================
+   CONFIGURACIÓN DEL MODELO
+   Solo hay datos de lluvia, así que la "humedad estimada" es un indicador
+   de riesgo, no una medición. Estos valores son supuestos iniciales:
+   conviene validarlos con personal agrónomo (MAGA / INSIVUMEH).
+   ===================================================================== */
+const CFG = {
+  RESERVA_MAX: 100,      // mm de agua útil que el suelo puede guardar
+  ET_DIA: 4,             // mm que se pierden por día (evaporación + consumo de las plantas)
+  LLUVIA_MIN_UTIL: 5,    // lluvias menores a esto se evaporan y no cuentan
+  INICIO_PCT: 0.10,      // reserva con la que se asume que empieza la temporada
+  CORTE_NORMAL: 50,      // % de reserva: desde aquí es "Normal"
+  CORTE_ATENCION: 30,    // desde aquí es "Atención"
+  CORTE_ALERTA: 15,      // desde aquí es "Alerta"; por debajo es "Crítico"
+  MIN_REPORTES_7D: 4,    // reportes mínimos en los últimos 7 días para evaluar un punto
+  MIN_HISTORIAL_DIAS: 20,// días de registro mínimos en la temporada para evaluar un punto
+  GRUPO_ATENCION: 15,    // % de puntos en alerta o crítico para marcar "Atención" a un grupo
+  UMBRAL_GRUPO: 30,      // % de puntos en alerta o crítico para marcar "Alerta" (activa seguimiento)
+  GRUPO_CRITICO: 50,     // % para marcar "Crítico" (si además hay algún punto crítico)
+  URL_VISOR: 'https://cesarchacon01.github.io/siap-pluviometria/'
+};
 
-async function cargarDatosKobo(){
-  try{
-    const respuesta = await fetch('./datos.json?v=' + Date.now(), {cache:'no-store'});
-    if(!respuesta.ok) throw new Error('No se pudo cargar datos.json');
+const LABEL = { normal:'Normal', atencion:'Atención', alerta:'Alerta', critico:'Crítico', sindatos:'Datos insuficientes' };
+const ORDEN = { critico:0, alerta:1, atencion:2, normal:3, sindatos:4 };
 
-    const archivo = await respuesta.json();
+/* ---------- fechas (todo en UTC, formato AAAA-MM-DD) ---------- */
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sept','oct','nov','dic'];
+const MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DAY = 86400000;
+const toT = s => { const [y,m,d] = s.split('-').map(Number); return Date.UTC(y, m-1, d); };
+const toS = t => new Date(t).toISOString().slice(0,10);
+const diffDias = (a,b) => Math.round((toT(b) - toT(a)) / DAY);
+const fmt = s => { const [y,m,d] = s.split('-'); return `${d} ${MESES[+m-1]} ${y}`; };
+const fmtL = s => `${+s.slice(8,10)} de ${MESES_L[+s.slice(5,7)-1]}`;
+/* "del 6 al 10 de septiembre", "del 1 de mayo al 10 de septiembre" o "el 7 de septiembre" */
+const rangoL = (a, b) => {
+  if (a === b) return `el ${fmtL(a)}`;
+  const [ya, ma, da] = a.split('-'), [yb, mb, db] = b.split('-');
+  if (ya === yb && ma === mb) return `del ${+da} al ${+db} de ${MESES_L[+ma - 1]}`;
+  return `del ${fmtL(a)} al ${fmtL(b)}`;
+};
+const fmtC = s => `${+s.slice(8,10)} ${MESES[+s.slice(5,7)-1]}`;
+const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y) => x.localeCompare(y,'es'));
+const avg = a => a.length ? a.reduce((s,v) => s+v, 0) / a.length : 0;
 
-    if(Array.isArray(archivo.datos) && archivo.datos.length > 0){
-      allData = archivo.datos;
-      console.log('SIAP actualizado desde Kobo:', allData.length, 'registros');
-      return true;
+/* ---------- estado global de datos ---------- */
+const S = { all:[], ref:'', refYear:0, puntos:new Map(), meta:{ actualizado:'', ejemplo:false } };
+const keyP = r => `${r.municipio}|${r.comunidad}|${r.caserio}`;
+
+function normalizar(arr){
+  return (arr || []).map(r => ({
+    municipio: String(r.municipio || '').trim(),
+    comunidad: String(r.comunidad || '').trim(),
+    caserio: String(r.caserio || '').trim(),
+    responsable: String(r.responsable || '').trim(),
+    fecha: String(r.fecha || '').slice(0,10),
+    mm: Number(r.mm) || 0
+  })).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.fecha) && r.municipio && r.comunidad);
+}
+
+function cargarPayload(p, ejemplo){
+  S.all = normalizar(p.datos);
+  S.meta = { actualizado: p.actualizado_utc || '', ejemplo: !!ejemplo };
+  S.ref = S.all.reduce((m,r) => r.fecha > m ? r.fecha : m, '0000-00-00');
+  S.refYear = +S.ref.slice(0,4);
+  calcPuntos();
+}
+
+/* ---------- balance de humedad por punto de monitoreo ---------- */
+function calcPuntos(){
+  const por = new Map();
+  for (const r of S.all){ const k = keyP(r); if (!por.has(k)) por.set(k, []); por.get(k).push(r); }
+  S.puntos = new Map();
+  for (const [k, rows] of por) S.puntos.set(k, statsPunto(k, rows));
+}
+
+function statsPunto(key, rows){
+  const porFecha = new Map();
+  rows.slice().sort((a,b) => a.fecha < b.fecha ? -1 : 1).forEach(r => porFecha.set(r.fecha, r));
+  const fechas = [...porFecha.keys()].sort();
+  const temp = fechas.filter(f => f >= `${S.refYear}-01-01`);
+  let reserva = CFG.RESERVA_MAX * CFG.INICIO_PCT;
+  let acum = 0, diasLluvia = 0, diasSin = 0, max = 0, ultimaLluvia = null;
+  for (const f of temp){
+    const mm = porFecha.get(f).mm;
+    const util = mm >= CFG.LLUVIA_MIN_UTIL ? mm : 0;
+    reserva = Math.min(CFG.RESERVA_MAX, Math.max(0, reserva + util - CFG.ET_DIA));
+    acum += mm;
+    if (mm > 0){ diasLluvia++; ultimaLluvia = f; } else diasSin++;
+    if (mm > max) max = mm;
+  }
+  const mmRef = porFecha.has(S.ref) ? porFecha.get(S.ref).mm : null;
+  const ult7 = temp.filter(f => { const d = diffDias(f, S.ref); return d >= 0 && d <= 6; }).length;
+  const historia = temp.length;
+  const pct = reserva / CFG.RESERVA_MAX * 100;
+  let estado;
+  if (ult7 < CFG.MIN_REPORTES_7D || historia < CFG.MIN_HISTORIAL_DIAS) estado = 'sindatos';
+  else if (pct >= CFG.CORTE_NORMAL) estado = 'normal';
+  else if (pct >= CFG.CORTE_ATENCION) estado = 'atencion';
+  else if (pct >= CFG.CORTE_ALERTA) estado = 'alerta';
+  else estado = 'critico';
+  const ordenadas = rows.slice().sort((a,b) => a.fecha < b.fecha ? -1 : 1);
+  const ultima = ordenadas[ordenadas.length - 1];
+  const informantes = uniq(ordenadas.slice().reverse().map(r => r.responsable));
+  // el informante más reciente va primero
+  const rec = [];
+  for (let i = ordenadas.length - 1; i >= 0; i--){ const n = ordenadas[i].responsable; if (n && !rec.includes(n)) rec.push(n); }
+  return {
+    key, municipio: ultima.municipio, comunidad: ultima.comunidad, caserio: ultima.caserio,
+    responsable: rec[0] || '', informantes: rec.length ? rec : informantes,
+    estado, pct, reserva, diasAgota: Math.ceil(reserva / CFG.ET_DIA),
+    diasSinLluvia: ultimaLluvia ? diffDias(ultimaLluvia, S.ref) : null, ultimaLluvia,
+    acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
+  };
+}
+
+const cmpRiesgo = (a,b) => ORDEN[a.estado] - ORDEN[b.estado] || a.pct - b.pct;
+
+/* Estado de un grupo de puntos (comunidad, municipio, departamento) */
+function estadoGrupo(pts){
+  const n = pts.length;
+  const ev = pts.filter(p => p.estado !== 'sindatos');
+  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, pctAlerta: 0, pctReserva: null, diasAgota: null, dias: null, ultima: null, estado: 'sindatos' };
+  const ds = pts.map(p => p.diasSinLluvia).filter(v => v != null);
+  base.dias = ds.length ? Math.min(...ds) : null;
+  base.ultima = pts.map(p => p.ultimaLluvia).filter(Boolean).sort().pop() || null;
+  if (!ev.length) return base;
+  base.k = ev.filter(p => p.estado === 'alerta' || p.estado === 'critico').length;
+  base.nCritico = ev.filter(p => p.estado === 'critico').length;
+  const af = ev.filter(p => p.estado === 'alerta' || p.estado === 'critico');
+  base.diasAfectados = af.length ? Math.max(...af.map(p => p.diasSinLluvia ?? 0)) : null;
+  base.pctAlerta = base.k / ev.length * 100;
+  base.pctReserva = avg(ev.map(p => p.pct));
+  base.diasAgota = Math.round(avg(ev.map(p => p.diasAgota)));
+  if (ev.length === 1) base.estado = ev[0].estado;
+  else if (base.pctAlerta >= CFG.GRUPO_CRITICO && ev.some(p => p.estado === 'critico')) base.estado = 'critico';
+  else if (base.pctAlerta >= CFG.UMBRAL_GRUPO) base.estado = 'alerta';
+  else if (base.pctAlerta >= CFG.GRUPO_ATENCION) base.estado = 'atencion';
+  else base.estado = 'normal';
+  // un grupo no puede verse "Normal" si algún punto está en alerta o crítico
+  if (base.estado === 'normal' && base.k > 0) base.estado = 'atencion';
+  return base;
+}
+
+/* Puntos en alerta o crítico, del más grave al menos grave, en texto corto */
+function puntosAfectados(pts, max = 3){
+  const af = pts.filter(p => p.estado === 'alerta' || p.estado === 'critico').sort(cmpRiesgo);
+  const nom = p => `${p.comunidad}${p.caserio && p.caserio !== p.comunidad ? ' · ' + p.caserio : ''} (${LABEL[p.estado].toLowerCase()}${p.diasSinLluvia != null ? ', ' + p.diasSinLluvia + ' ' + (p.diasSinLluvia === 1 ? 'día' : 'días') + ' sin lluvia' : ''})`;
+  const txt = af.slice(0, max).map(nom).join('; ');
+  return af.length > max ? `${txt}; y ${af.length - max} más` : txt;
+}
+
+/* ---------- filtros ---------- */
+function filtrar(f){
+  return S.all.filter(r =>
+    (!f.mun || r.municipio === f.mun) && (!f.com || r.comunidad === f.com) &&
+    (!f.cas || r.caserio === f.cas) && (!f.inf || r.responsable === f.inf) &&
+    (!f.desde || r.fecha >= f.desde) && (!f.hasta || r.fecha <= f.hasta));
+}
+function puntosDe(f){
+  return [...S.puntos.values()].filter(p =>
+    (!f.mun || p.municipio === f.mun) && (!f.com || p.comunidad === f.com) &&
+    (!f.cas || p.caserio === f.cas) && (!f.inf || p.informantes.includes(f.inf)));
+}
+function rangoPeriodo(tipo){
+  const hasta = S.ref;
+  let desde = `${S.refYear}-05-01`;
+  if (tipo === '30') desde = toS(toT(hasta) - 29 * DAY);
+  else if (tipo === 'mes') desde = hasta.slice(0,8) + '01';
+  if (desde > hasta) desde = `${S.refYear}-01-01`;
+  return { desde, hasta };
+}
+
+/* Lluvia promedio del último día con datos (el registro de las 7 am es del día anterior) */
+function lluviaDia(f, fecha){
+  const rows = filtrar({ ...f, desde: fecha, hasta: fecha });
+  const puntos = new Set(rows.map(keyP));
+  return {
+    fecha, n: rows.length, puntosReportaron: puntos.size, puntosTotal: puntosDe(f).length,
+    conLluvia: new Set(rows.filter(r => r.mm > 0).map(keyP)).size,
+    mm: rows.length ? avg(rows.map(r => r.mm)) : null,
+    max: rows.reduce((m, r) => r.mm > m ? r.mm : m, 0)
+  };
+}
+
+/* ---------- series diarias (promedio entre los puntos del filtro) ---------- */
+function serieDiaria(rows){
+  const m = new Map();
+  for (const r of rows){
+    let a = m.get(r.fecha);
+    if (!a){ a = { s:0, n:0, pos:0 }; m.set(r.fecha, a); }
+    a.s += r.mm; a.n++; if (r.mm > 0) a.pos++;
+  }
+  const out = { fechas:[], mm:[], acum:[], n:[], pos:[] };
+  if (!m.size) return out;
+  const ks = [...m.keys()].sort();
+  const fin = toT(ks[ks.length - 1]);
+  let ac = 0;
+  for (let t = toT(ks[0]); t <= fin; t += DAY){
+    const f = toS(t), a = m.get(f);
+    const v = a ? a.s / a.n : null;
+    if (v !== null) ac += v;
+    out.fechas.push(f);
+    out.mm.push(v === null ? null : Math.round(v * 100) / 100);
+    out.acum.push(Math.round(ac * 100) / 100);
+    out.n.push(a ? a.n : 0);
+    out.pos.push(a ? a.pos : 0);
+  }
+  return out;
+}
+
+/* Primer día de la temporada con lluvia importante (promedio de los puntos >= LLUVIA_MIN_UTIL mm).
+   Sirve para no contar como "tiempo sin lluvia" la época seca previa a las primeras lluvias. */
+function inicioLluvias(f){
+  const s = serieDiaria(filtrar({ ...f, desde: `${S.refYear}-01-01`, hasta: S.ref }));
+  for (let i = 0; i < s.fechas.length; i++) if (s.mm[i] !== null && s.mm[i] >= CFG.LLUVIA_MIN_UTIL) return s.fechas[i];
+  return null;
+}
+
+function resumenSerie(s, rows, inicio){
+  const r = { dl:0, ds:0, max: rows.reduce((m,x) => x.mm > m ? x.mm : m, 0), rachaMax:0, rachaIni:-1, rachaFin:-1,
+              ult:-1, ultFecha:null, posUlt:0, nUlt:0, diasDesde:null, total: s.acum.length ? s.acum[s.acum.length-1] : 0 };
+  let cur = 0, curIni = -1;
+  r.inicio = inicio || null;
+  s.mm.forEach((v,i) => {
+    if (v === null){ cur = 0; return; }
+    if (v > 0){ r.dl++; r.ult = i; cur = 0; }
+    else {
+      r.ds++;
+      if (inicio && s.fechas[i] < inicio){ cur = 0; return; }   // época seca previa a las lluvias: no cuenta en el mayor tiempo sin lluvia
+      if (cur === 0) curIni = i;
+      cur++;
+      if (cur > r.rachaMax){ r.rachaMax = cur; r.rachaIni = curIni; r.rachaFin = i; }
     }
-  }catch(error){
-    console.error('Error cargando datos de Kobo:', error);
+  });
+  if (r.ult >= 0){
+    r.ultFecha = s.fechas[r.ult]; r.posUlt = s.pos[r.ult]; r.nUlt = s.n[r.ult];
+    r.diasDesde = diffDias(r.ultFecha, s.fechas[s.fechas.length - 1]);
   }
-
-  console.warn('Se utilizarán los datos de respaldo incluidos en el SIAP.');
-  return false;
+  return r;
 }
-const $=id=>document.getElementById(id);
-const clean=s=>(s??'').toString().trim();
-const norm=s=>clean(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ');
-const fmtDate=s=>{const d=new Date(s+'T00:00:00');return isNaN(d)?s:d.toLocaleDateString('es-GT',{day:'2-digit',month:'short',year:'numeric'})};
-const key=r=>[r.municipio,r.comunidad,r.caserio,r.responsable].join('¦');
-function parseDate(v){if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==='number'){const d=new Date(Math.round((v-25569)*86400*1000));return d.toISOString().slice(0,10)}const s=clean(v);if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);const d=new Date(s);return isNaN(d)?'':d.toISOString().slice(0,10)}
-function mapHeaders(headers){const aliases={municipio:['municipio'],comunidad:['seleccione la comunidad','comunidad'],caserio:['seleccione el caserio','caserio'],responsable:['responsable','informante','observador'],fecha:['fecha del registro','fecha'],mm:['cuantos milimetros registro hoy','milimetros','mm','precipitacion']};const m={};for(const [k,arr] of Object.entries(aliases)){let i=headers.findIndex(h=>arr.some(a=>norm(h).includes(a)));m[k]=i}return m}
-function loadRows(rows){if(!rows.length)throw Error('El archivo no contiene datos.');const h=rows[0],m=mapHeaders(h);if(Object.values(m).some(i=>i<0))throw Error('No se reconocieron las seis columnas requeridas.');allData=rows.slice(1).map(r=>({municipio:clean(r[m.municipio]),comunidad:clean(r[m.comunidad]),caserio:clean(r[m.caserio]),responsable:clean(r[m.responsable]),fecha:parseDate(r[m.fecha]),mm:Number(r[m.mm])||0})).filter(r=>r.responsable&&r.fecha);initialize(true)}
-function unique(arr){return [...new Set(arr.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'))}
-function fillSelect(id,vals,label){const el=$(id),old=el.value;el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option>${v}</option>`).join('');if(vals.includes(old))el.value=old}
-function cascade(){
-  let d=allData;
-  const fm=$('fMunicipio').value;
 
-  if(!fm){
-    fillSelect('fComunidad',[],'Todas');
-    fillSelect('fCaserio',[],'Todos');
-    fillSelect('fResponsable',[],'Todos');
-    render();
-    return;
+/* ---------- tablas de riesgo ---------- */
+function filasRiesgo(pts, nivel){
+  const m = new Map();
+  for (const p of pts){
+    const k = nivel === 'punto' ? p.key : `${p.municipio}|${p.comunidad}`;
+    if (!m.has(k)) m.set(k, []);
+    m.get(k).push(p);
   }
-
-  d=d.filter(r=>r.municipio===fm);
-  fillSelect('fComunidad',unique(d.map(r=>r.comunidad)),'Todas');
-
-  const fc=$('fComunidad').value;
-
-  if(!fc){
-    fillSelect('fCaserio',[],'Todos');
-    fillSelect('fResponsable',[],'Todos');
-    render();
-    return;
-  }
-
-  d=d.filter(r=>r.comunidad===fc);
-  fillSelect('fCaserio',unique(d.map(r=>r.caserio)),'Todos');
-
-  const fs=$('fCaserio').value;
-
-  if(!fs){
-    fillSelect('fResponsable',[],'Todos');
-    render();
-    return;
-  }
-
-  d=d.filter(r=>r.caserio===fs);
-  fillSelect('fResponsable',unique(d.map(r=>r.responsable)),'Todos');
-
-  render();
+  const filas = [...m.values()].map(list => {
+    const g = estadoGrupo(list), p0 = list[0];
+    return {
+      nombre: nivel === 'punto' ? (p0.caserio || p0.comunidad) : p0.comunidad,
+      sub: nivel === 'punto' ? p0.responsable : p0.municipio,
+      g, acum: avg(list.map(p => p.acum)), sinLluvia: g.dias,
+      ayer: (v => v.length ? avg(v) : null)(list.map(p => p.mmRef).filter(v => v != null)),
+      mun: p0.municipio, com: p0.comunidad, cas: p0.caserio, nivel
+    };
+  });
+  filas.sort((a,b) => ORDEN[a.g.estado] - ORDEN[b.g.estado] || (a.g.pctReserva ?? 101) - (b.g.pctReserva ?? 101));
+  return filas;
 }
-function filtered(){return allData.filter(r=>(!$('fMunicipio').value||r.municipio===$('fMunicipio').value)&&(!$('fComunidad').value||r.comunidad===$('fComunidad').value)&&(!$('fCaserio').value||r.caserio===$('fCaserio').value)&&(!$('fResponsable').value||r.responsable===$('fResponsable').value)&&(!$('fDesde').value||r.fecha>=$('fDesde').value)&&(!$('fHasta').value||r.fecha<=$('fHasta').value)).sort((a,b)=>a.fecha.localeCompare(b.fecha))}
-function initialize(resetDates=false){
-  fillSelect('fMunicipio',unique(allData.map(r=>r.municipio)),'Todos');
-
-  fillSelect('fComunidad',[],'Todas');
-  fillSelect('fCaserio',[],'Todos');
-  fillSelect('fResponsable',[],'Todos');
-
-  const dates=allData.map(r=>r.fecha).filter(Boolean).sort();
-
-  if(resetDates&&dates.length){
-    $('fDesde').value=dates[0];
-    $('fHasta').value=dates.at(-1);
-  }
-
-  render();
+function filasMunicipios(pts){
+  const m = new Map();
+  for (const p of pts){ if (!m.has(p.municipio)) m.set(p.municipio, []); m.get(p.municipio).push(p); }
+  const filas = [...m.entries()].map(([mun, list]) => ({ mun, g: estadoGrupo(list) }));
+  filas.sort((a,b) => ORDEN[a.g.estado] - ORDEN[b.g.estado] || b.g.pctAlerta - a.g.pctAlerta);
+  return filas;
 }
-function aggregateByDate(data){const m=new Map();for(const r of data){if(!m.has(r.fecha))m.set(r.fecha,{s:0,n:0});const o=m.get(r.fecha);o.s+=Number(r.mm)||0;o.n++;}return [...m].map(([fecha,o])=>({fecha,mm:o.n?o.s/o.n:0})).sort((a,b)=>a.fecha.localeCompare(b.fecha))}
-function render(){const d=filtered(),groups=new Map();for(const r of d){if(!groups.has(key(r)))groups.set(key(r),[]);groups.get(key(r)).push(r)}const pts=aggregateByDate(d);
-const sum=pts.reduce((a,r)=>a+r.mm,0);
-const rain=pts.filter(r=>Number(r.mm)>0).length;
-const ultimaLluvia=pts.filter(r=>Number(r.mm)>0).at(-1);                  
-const zero=pts.filter(r=>Number(r.mm)===0).length;
-let periodoSinLluvia=0;
-let contadorSinLluvia=0;
-let inicioSinLluvia=null;
-let inicioPeriodoMax=null;
-let finPeriodoMax=null;
+function acumPorInformante(rows){
+  const m = new Map();
+  for (const r of rows){
+    if (!r.responsable) continue;
+    let a = m.get(r.responsable);
+    if (!a){ a = { nombre:r.responsable, sum:0, lugar:'' }; m.set(r.responsable, a); }
+    a.sum += r.mm; a.lugar = `${r.comunidad} · ${r.caserio || r.comunidad}`;
+  }
+  return [...m.values()].sort((a,b) => b.sum - a.sum);
+}
 
-for(const p of pts){
-    if(Number(p.mm)===0){
-        if(contadorSinLluvia===0) inicioSinLluvia=p.fecha;
-        contadorSinLluvia++;
+/* ---------- mensaje para WhatsApp ---------- */
+function textoWA(territorio, g, pts, ayer){
+  const peor = pts.slice().sort(cmpRiesgo)[0];
+  const l = [];
+  if (g.estado === 'alerta' || g.estado === 'critico'){
+    l.push(`*ALERTA POR FALTA DE LLUVIA · ${territorio}*`);
+    l.push(`${g.k} de ${g.ev} puntos de monitoreo tienen la humedad del suelo baja.`);
+    if (peor && peor.diasSinLluvia != null)
+      l.push(`Más afectado: ${peor.comunidad}${peor.caserio && peor.caserio !== peor.comunidad ? ' · ' + peor.caserio : ''}, ${peor.diasSinLluvia} días sin lluvia.`);
+    l.push('Se recomienda dar seguimiento en campo.');
+  } else {
+    l.push(`*Resumen de lluvia · ${territorio}*`);
+    l.push(`Estado: ${LABEL[g.estado]}. ${g.k} de ${g.ev} puntos con datos están en alerta o crítico.`);
+  }
+  if (ayer && ayer.mm != null) l.push(`Lluvia promedio del día anterior (${fmtC(S.ref)}): ${ayer.mm.toFixed(1)} mm, en ${ayer.puntosReportaron} de ${ayer.puntosTotal} puntos.`);
+  l.push(`_Estimación según la lluvia registrada hasta el ${fmt(S.ref)}. Más detalle: ${CFG.URL_VISOR}_`);
+  return l.join('\n');
+}
 
-        if(contadorSinLluvia>periodoSinLluvia){
-            periodoSinLluvia=contadorSinLluvia;
-            inicioPeriodoMax=inicioSinLluvia;
-            finPeriodoMax=p.fecha;
-        }
-    }else{
-        contadorSinLluvia=0;
-        inicioSinLluvia=null;
+/* ---------- datos de ejemplo (solo si no se puede leer datos.json) ---------- */
+function generarEjemplo(){
+  let seed = 20260510;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+  const ini = toT('2026-05-01'), N = 133, reg = [];
+  for (let d = 0; d < N; d++){
+    const f = toS(ini + d * DAY), m = +f.slice(5,7);
+    const p = m === 5 ? (d < 20 ? 0.06 : 0.3) : m === 6 ? 0.55 : m === 7 ? 0.28 : m === 8 ? 0.3 : 0.5;
+    reg.push(rnd() < p ? Math.round((-Math.log(1 - rnd()) * 14 + 1) * 2) / 2 : 0);
+  }
+  const defs = [
+    ['San Juan Ermita','Buena Vista','Centro','normal'], ['San Juan Ermita','Carrizal','Centro','seco'],
+    ['San Juan Ermita','Salitron','Centro','medio'], ['San Juan Ermita','Tasharjá','Magueyal','critico'],
+    ['San Juan Ermita','Tasharjá','Arriba','medio'], ['San Juan Ermita','Churischan','Centro','normal'],
+    ['San Juan Ermita','Río Arriba','La Esperanza','seco'], ['Esquipulas','Carboneras','Carboneras','normal'],
+    ['Esquipulas','Duraznal','Duraznal','normal'], ['Quezaltepeque','Río Grande','Río Grande','seco'],
+    ['Quezaltepeque','Chiramay','Los Planes','normal'], ['Camotán','Shalaguá','Shalaguá','critico'],
+    ['Camotán','Cayur','Centro','critico'],
+    ['San José La Arada','Santa Rosa','Santa Rosa','nuevo'], ['San José La Arada','Saspan','Saspan','nuevo'],
+    ['Olopa','El Rodeo','Valle Nuevo','seco']
+  ];
+  const datos = [];
+  defs.forEach((df, i) => {
+    const [mun, com, cas, perfil] = df, inf = `Observador ${i + 1}`;
+    for (let d = perfil === 'nuevo' ? N - 5 : 0; d < N; d++){
+      const resta = N - 1 - d;
+      if (rnd() < 0.04 && resta > 0) continue;
+      let mm = reg[d] > 0 && rnd() < 0.8 ? Math.round(reg[d] * (0.5 + rnd()) * 2) / 2 : 0;
+      if (perfil === 'critico' && resta < 24) mm = 0;
+      if (perfil === 'seco' && resta < 12) mm = 0;
+      if (perfil === 'medio' && resta < 4) mm = 0;
+      if (perfil === 'normal' && resta === 1) mm = Math.max(mm, 8);
+      datos.push({ municipio: mun, comunidad: com, caserio: cas, responsable: inf, fecha: toS(ini + d * DAY), mm });
     }
+  });
+  return { actualizado_utc: new Date().toISOString(), total_registros: datos.length, datos };
 }
-const max=Math.max(0,...d.map(r=>Number(r.mm)||0));$('kInformantes').textContent=groups.size;$('kRegistros').textContent=d.length.toLocaleString('es-GT');$('kAcumulado').textContent=sum.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kConLluvia').textContent=rain.toLocaleString('es-GT');$('kSinLluvia').textContent=zero.toLocaleString('es-GT');$('kMax').textContent=max.toLocaleString('es-GT',{maximumFractionDigits:1})+' mm';$('kPeriodoSinLluvia').textContent=periodoSinLluvia.toLocaleString('es-GT')+' días';
-$('kFechasPeriodoSinLluvia').textContent=(inicioPeriodoMax&&finPeriodoMax)?fmtDate(inicioPeriodoMax).replace(' 2026','')+' – '+fmtDate(finPeriodoMax):'';              
-$('kUltimaLluvia').textContent=ultimaLluvia?fmtDate(ultimaLluvia.fecha):'Sin lluvia';
-// Cobertura territorial de la última lluvia registrada
-let puntosConReporteUltimaLluvia = 0;
-let puntosConLluviaUltimaLluvia = 0;
-let porcentajeCoberturaUltimaLluvia = 0;
+/* =====================================================================
+   INTERFAZ
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const nf = (v, d = 0) => Number(v).toLocaleString('es-GT', { minimumFractionDigits: d, maximumFractionDigits: d });
+const ico = (n, g) => `<svg class="i${g ? ' g' : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const ICONO_ESTADO = { normal:'ok', atencion:'alert', alerta:'alert', critico:'oct', sindatos:'info' };
+const chip = e => `<span class="chip e-${e}">${LABEL[e]}</span>`;
+const plural = (n, a, b) => n === 1 ? a : b;
 
-if (ultimaLluvia) {
+const charts = { com:null, mun:null, cards:[] };
+const CTX = { com:null, mun:null };
+const C = { mun:'', com:'', per:'todo' };                       // vista comunitaria
+const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
+let cardsN = 12, cardsLista = [], cardsRows = new Map();
 
-    const registrosUltimaFecha = d.filter(
-        r => r.fecha === ultimaLluvia.fecha
-    );
+const kill = c => { if (c) { try { c.destroy(); } catch (e) {} } };
 
-    const puntosReportados = new Set();
-    const puntosConLluvia = new Set();
-
-    registrosUltimaFecha.forEach(r => {
-
-        const punto = key(r);
-
-        puntosReportados.add(punto);
-
-        if (Number(r.mm) > 0) {
-            puntosConLluvia.add(punto);
-        }
-    });
-
-    puntosConReporteUltimaLluvia = puntosReportados.size;
-    puntosConLluviaUltimaLluvia = puntosConLluvia.size;
-
-    porcentajeCoberturaUltimaLluvia =
-        puntosConReporteUltimaLluvia > 0
-            ? (puntosConLluviaUltimaLluvia /
-               puntosConReporteUltimaLluvia) * 100
-            : 0;
+function llenar(sel, valores, todos, actual){
+  sel.innerHTML = (todos !== null ? `<option value="">${todos}</option>` : '') +
+    valores.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  sel.value = valores.includes(actual) ? actual : (todos !== null ? '' : (valores[0] || ''));
+  return sel.value;
+}
+function cuando(f){
+  if (!f) return 'sin lluvia registrada';
+  const d = diffDias(f, S.ref);
+  return d === 0 ? `el último día registrado (${fmtC(f)})` : `hace ${d} ${plural(d, 'día', 'días')} (${fmtC(f)})`;
+}
+function hoyGT(){ try { return new Date().toLocaleDateString('en-CA', { timeZone:'America/Guatemala' }); } catch (e) { return ''; } }
+function etiquetaUltimoDato(){
+  const h = hoyGT(); if (!h) return fmt(S.ref);
+  const d = diffDias(S.ref, h);
+  return d === 1 ? 'ayer' : d === 0 ? 'hoy' : fmt(S.ref);
 }
 
-// Mostrar resultado solamente si el elemento existe
-const elCoberturaUltimaLluvia = $('kCoberturaUltimaLluvia');
-
-if (elCoberturaUltimaLluvia) {
-
-    elCoberturaUltimaLluvia.textContent =
-        ultimaLluvia && puntosConReporteUltimaLluvia > 0
-            ? `Registrada en ${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos con reporte (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %)`
-            : '';
+/* ---------------- navegación ---------------- */
+function hashActual(){ return ({ '#comunitario':'comunitario', '#municipal':'municipal' })[location.hash] || 'inicio'; }
+function mostrar(n){
+  $('#pantallaInicio').hidden = n !== 'inicio';
+  $('#panelComunitario').hidden = n !== 'comunitario';
+  $('#panelMunicipal').hidden = n !== 'municipal';
+  if (n === 'inicio') renderInicio();
+  if (n === 'comunitario') renderComunitario();
+  if (n === 'municipal') renderMunicipal();
+  window.scrollTo(0, 0);
 }
-const desde=$('fDesde').value;
-const hasta=$('fHasta').value;const diasDesdeUltimaLluvia=(ultimaLluvia&&hasta)
-  ?Math.max(0,Math.floor((new Date(hasta+'T00:00:00')-new Date(ultimaLluvia.fecha+'T00:00:00'))/86400000))
-  :0;
-
-const elDiasDesdeUltimaLluvia = $('kDiasDesdeUltimaLluvia');
-if (elDiasDesdeUltimaLluvia) {
-    elDiasDesdeUltimaLluvia.textContent =
-        diasDesdeUltimaLluvia.toLocaleString('es-GT') + ' días';
+function ir(n){
+  mostrar(n);
+  try { history.pushState(null, '', n === 'inicio' ? location.pathname + location.search : '#' + n); } catch (e) {}
 }
-const diasPeriodo=(desde&&hasta)?Math.floor((new Date(hasta+'T00:00:00')-new Date(desde+'T00:00:00'))/86400000)+1:0;
-const esperados=groups.size*diasPeriodo;
-const registrosUnicos=new Set(d.map(r=>`${key(r)}|${r.fecha}`)).size;
-const cobertura=esperados>0?(registrosUnicos/esperados)*100:0;
-$('kCobertura').textContent=cobertura.toLocaleString('es-GT',{maximumFractionDigits:1})+' %';const dates=d.map(r=>r.fecha).sort();$('periodo').textContent=dates.length?`${fmtDate(dates[0])} — ${fmtDate(dates.at(-1))}`:'Sin datos';$('status').textContent=`Base activa: ${allData.length.toLocaleString('es-GT')} registros. Filtro actual: ${d.length.toLocaleString('es-GT')} registros.`;
 
-renderGlobal(d);               
-const lectura=$('lecturaPeriodo');
-if(lectura){
-
-  const comunidad=$('fComunidad').value;
-  const caserio=$('fCaserio').value;
-  const responsable=$('fResponsable').value;
-
-  let nivel='municipal';
-
-  if(comunidad && comunidad!=='Todos') nivel='comunidad';
-  if(caserio && caserio!=='Todos') nivel='caserio';
-  if(responsable && responsable!=='Todos') nivel='informante';
-const panelGraficaGeneral=$('panelGraficaGeneral');
-if(panelGraficaGeneral) panelGraficaGeneral.style.display=(nivel==='municipal')?'block':'none';
-  let texto='';
-
-  if(nivel==='municipal'){
-    texto=`En el monitoreo municipal, durante el período analizado se identificó lluvia registrada en ${rain} días y ausencia de lluvia en ${zero} días.`;
-}else if(nivel==='comunidad'){
-    texto=`En la comunidad seleccionada, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
-  }else if(nivel==='caserio'){
-    texto=`En el caserío seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
-  }else{
-    texto=`Según los registros del informante seleccionado, durante el período analizado se registraron ${rain} días con lluvia y ${zero} días sin lluvia.`;
-  }
-  if(periodoSinLluvia>0 && inicioPeriodoMax && finPeriodoMax){
-    texto+=` El período continuo más prolongado con registros de 0 mm fue de ${periodoSinLluvia} días, del ${fmtDate(inicioPeriodoMax)} al ${fmtDate(finPeriodoMax)}.`;
-  }
-  if(ultimaLluvia){
-
-    texto+=` La última lluvia registrada ocurrió el ${fmtDate(ultimaLluvia.fecha)}`;
-
-    if(puntosConReporteUltimaLluvia > 0){
-
-        texto+=` y se presentó en ${puntosConLluviaUltimaLluvia} de los ${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %),`;
-
-        if(porcentajeCoberturaUltimaLluvia < 50){
-            texto+=` lo que evidencia una distribución territorial limitada de la precipitación.`;
-        }else if(porcentajeCoberturaUltimaLluvia < 80){
-            texto+=` mostrando una distribución territorial parcial de la precipitación.`;
-        }else{
-            texto+=` mostrando una distribución territorial amplia de la precipitación.`;
-        }
-
-    }else{
-        texto+=`.`;
+/* ---------------- gráfica (la misma de siempre: barras diarias + línea de acumulado) ---------------- */
+function etiqueta(ctx, t, x, y, al, col, a){
+  ctx.save();
+  ctx.font = '700 11px Inter, "Segoe UI", Arial, sans-serif';
+  const w = ctx.measureText(t).width;
+  let x0 = al === 'right' ? x - w : x;
+  if (x0 + w > a.right) x0 = a.right - w - 2;
+  if (x0 < a.left) x0 = a.left + 2;
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(x0 - 3, y - 11, w + 6, 15);
+  ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(t, x0, y);
+  ctx.restore();
+}
+const pluginAnot = {
+  id: 'anot',
+  beforeDatasetsDraw(ch, _a, o){
+    if (!o || o.secaDesde == null) return;
+    const a = ch.chartArea, step = a.width / ch.data.labels.length;
+    ch.ctx.save(); ch.ctx.fillStyle = 'rgba(217,102,15,.12)';
+    ch.ctx.fillRect(a.left + step * o.secaDesde, a.top, a.right - (a.left + step * o.secaDesde), a.height);
+    ch.ctx.restore();
+  },
+  afterDatasetsDraw(ch, _a, o){
+    if (!o) return;
+    const a = ch.chartArea, sc = ch.scales, n = ch.data.labels.length, step = a.width / n;
+    if (o.maxIdx != null)
+      etiqueta(ch.ctx, `Día más lluvioso: ${nf(o.maxVal, 0)} mm`, a.left + step * (o.maxIdx + .5) + 6, Math.max(sc.y.getPixelForValue(o.maxVal) - 4, a.top + 12), 'left', '#0f2742', a);
+    if (o.total != null)
+      etiqueta(ch.ctx, `Total acumulado: ${nf(o.total, 0)} mm`, a.right - 6, Math.min(sc.y1.getPixelForValue(o.total) + 18, a.bottom - 24), 'right', '#1565c0', a);
+    if (o.secaDesde != null){
+      const d = n - o.secaDesde;
+      etiqueta(ch.ctx, `${d} ${plural(d, 'día', 'días')} sin lluvia`, a.right - 4, a.bottom - 6, 'right', '#8a3d07', a);
     }
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(pluginAnot);
 
-    texto+=` Al cierre del período seleccionado ${diasDesdeUltimaLluvia === 1 ? 'ha transcurrido 1 día calendario' : `han transcurrido ${diasDesdeUltimaLluvia} días calendario`} desde esa lluvia.`;
-}
-  lectura.textContent=texto;
-}                  
-renderRanking(groups);renderObservers(groups)}
-function makeBarConfig(points,label){
-  let acumulado=0;
-  const serieAcumulada=points.map(x=>{acumulado+=Number(x.mm)||0;return Number(acumulado.toFixed(2))});
-  return{
-    type:'bar',
-    data:{
-      labels:points.map(x=>fmtDate(x.fecha)),
-      datasets:[
-        {
-          type:'bar',
-          label:'Lluvia diaria',
-          data:points.map(x=>x.mm),
-          yAxisID:'y',
-          backgroundColor:points.map(x=>Number(x.mm) > 0?'#14845c':'#eef1f4'),
-          borderColor:points.map(x=>Number(x.mm) > 0?'#14845c':'#d8dee4'),
-          borderWidth:1,
-          borderRadius:3,
-          order:2
-        },
-        {
-          type:'line',
-          label:'Precipitación acumulada',
-          data:serieAcumulada,
-          yAxisID:'y1',
-          borderColor:'#1565c0',
-          backgroundColor:'#1565c0',
-          borderWidth:2.5,
-          pointRadius:0,
-          pointHoverRadius:4,
-          tension:.22,
-          fill:false,
-          order:1
-        , pointRadius:0, pointHoverRadius:4, borderWidth:3, tension:0.22, fill:false, spanGaps:true}
+function cfgGrafica(s, opts = {}){
+  return {
+    data: {
+      labels: s.fechas.map(fmt),
+      datasets: [
+        { type:'line', label:'Precipitación acumulada', data:s.acum, yAxisID:'y1', borderColor:'#1565c0', backgroundColor:'#1565c0', borderWidth:3, pointRadius:0, pointHoverRadius:4, tension:.15, order:1 },
+        { type:'bar', label:'Lluvia diaria', data:s.mm, yAxisID:'y', backgroundColor:'#14845c', borderColor:'#14845c', borderRadius:2, maxBarThickness:8, order:2 }
       ]
     },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'top',align:'end',labels:{
-          usePointStyle:true,
-          boxWidth:9,
-          generateLabels:(chart)=>{
-            const labels=Chart.defaults.plugins.legend.labels.generateLabels(chart);
-            labels.forEach(item=>{
-              if(item.text==='Lluvia diaria'){
-                item.fillStyle='#14845c';
-                item.strokeStyle='#14845c';
-                item.pointStyle='circle';
-              }
-            });
-            return labels;
-          }
-        }},
-        tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${Number(c.raw).toLocaleString('es-GT',{maximumFractionDigits:1})} mm`}}
+    options: {
+      responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend: { position:'top', align:'end', labels:{ usePointStyle:true, pointStyle:'circle', boxWidth:12, boxHeight:12, color:'#667085', font:{ size:12 } } },
+        tooltip: { callbacks: { label: c => c.dataset.yAxisID === 'y1' ? `Acumulado: ${nf(c.parsed.y, 1)} mm` : (c.parsed.y == null ? 'Sin reporte' : `Lluvia: ${nf(c.parsed.y, 1)} mm`) } },
+        anot: opts.anot || false
       },
-      scales:{
-       x:{
-  ticks:{
-    maxRotation:45,
-    minRotation:45,
-    autoSkip:true,
-    maxTicksLimit:14,
-    padding:8
-  },
-  grid:{
-    display:true,
-    drawOnChartArea:true,
-    color:'rgba(15,39,66,0.06)',
-    drawTicks:true,
-    tickLength:8
-  }
-},
-        y:{beginAtZero:true,position:'left',title:{display:true,text:'Lluvia diaria (mm)'},grid:{color:'rgba(15,39,66,.08)'}},
-        y1:{beginAtZero:true,position:'right',title:{display:true,text:'Acumulado (mm)'},grid:{drawOnChartArea:false}}
+      scales: {
+        x: { grid:{ color:'#eef1f4' }, ticks:{ maxRotation:45, minRotation:45, autoSkip:true, maxTicksLimit:opts.maxTicks || 12, color:'#667085', font:{ size:11 } } },
+        y: { position:'left', beginAtZero:true, title:{ display:true, text:'Lluvia diaria (mm)', color:'#667085' }, grid:{ color:'#eef1f4' }, ticks:{ color:'#667085' } },
+        y1: { position:'right', beginAtZero:true, title:{ display:true, text:'Acumulado (mm)', color:'#667085' }, grid:{ drawOnChartArea:false }, ticks:{ color:'#667085' } }
       }
     }
+  };
+}
+function crearGrafica(canvas, s, opts){
+  const caja = canvas.parentElement;
+  const aviso = caja.querySelector('.sin-grafica');
+  if (aviso) aviso.remove();
+  if (typeof Chart === 'undefined'){
+    canvas.style.display = 'none';
+    caja.insertAdjacentHTML('beforeend', '<p class="nota sin-grafica">No se pudo cargar la librería de gráficas. Revisa la conexión a internet.</p>');
+    return null;
   }
-}
-function renderGlobal(d){const pts=aggregateByDate(d);if(globalChart)globalChart.destroy();globalChart=new Chart($('globalChart'),makeBarConfig(pts,'Precipitación consolidada'))}
-function renderRanking(groups){const rows=[...groups.values()].map(g=>({name:g[0].responsable,place:`${g[0].comunidad} · ${g[0].caserio}`,mm:g.reduce((a,r)=>a+r.mm,0)})).sort((a,b)=>b.mm-a.mm);$('ranking').innerHTML=rows.map((x,i)=>`<tr><td><b>${i+1}. ${x.name}</b><div class="meta">${x.place}</div></td><td class="right"><b>${x.mm.toLocaleString('es-GT',{maximumFractionDigits:1})}</b></td></tr>`).join('')||'<tr><td colspan="2">Sin datos</td></tr>'}
-function renderObservers(groups){charts.forEach(c=>c.destroy());charts=[];const box=$('observers');box.innerHTML='';if(!groups.size){box.innerHTML='<div class="empty">No hay registros para los filtros seleccionados.</div>';return}let i=0;for(const g of groups.values()){g.sort((a,b)=>a.fecha.localeCompare(b.fecha));const first=g[0],sum=g.reduce((a,r)=>a+r.mm,0),rain=g.filter(r=>Number(r.mm) > 0).length,zero=g.filter(r=>r.mm===0).length,max=Math.max(0,...g.map(r=>r.mm));const el=document.createElement('article');el.className='observer';el.innerHTML=`<h3>${first.comunidad} · ${first.caserio}</h3><div class="meta"><b>${first.responsable}</b> · ${first.municipio}</div><div class="stats"><span>Período: <b>${fmtDate(g[0].fecha)} – ${fmtDate(g.at(-1).fecha)}</b></span><span>Acumulado: <b>${sum.toLocaleString('es-GT',{maximumFractionDigits:1})} mm</b></span><span>Días con lluvia: <b>${rain}</b></span><span>Días sin lluvia: <b>${zero}</b></span><span>Máx. diario registrado: <b>${max} mm</b></span></div><div class="smallchart"><canvas id="c${i}"></canvas></div><div style="margin-top:14px;margin-bottom:6px;font-weight:700;font-size:14px;">Línea de tiempo de lluvia</div><div style="display:flex;gap:18px;align-items:center;margin-bottom:10px;font-size:12px;color:#5f6b7a;"><span style="display:flex;align-items:center;gap:6px;"><i style="width:12px;height:12px;background:#14845c;border-radius:3px;display:inline-block;"></i>Con lluvia (&gt;0 mm)</span><span style="display:flex;align-items:center;gap:6px;"><i style="width:12px;height:12px;background:#d8dee4;border-radius:3px;display:inline-block;"></i>Sin lluvia (0 mm)</span></div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:32px;row-gap:14px;width:100%;">${(()=>{
-const meses=g.reduce((acc,r)=>{
-  const mes=r.fecha.substring(0,7);
-  if(!acc[mes]) acc[mes]=[];
-  acc[mes].push(r);
-  return acc;
-},{});
-
-const crearMes=(mes,registros)=>`
-<div style="margin-bottom:12px;">
-  <div style="font-size:12px;font-weight:700;color:#5f6b7a;margin-bottom:6px;text-transform:uppercase;">
-    ${new Date(mes+'-01T00:00:00').toLocaleDateString('es-GT',{month:'long',year:'numeric'})}
-  </div>
-  <div style="display:flex;flex-wrap:wrap;gap:5px;">
-    ${registros.map(r=>`<span class="day ${Number(r.mm)>0?'rain':''}" title="${fmtDate(r.fecha)}: ${r.mm} mm"></span>`).join('')}
-  </div>
-</div>`;
-
-const entradas=Object.entries(meses);
-
-const izquierda=entradas
-  .filter(([mes])=>Number(mes.substring(5,7))<=6)
-  .sort(([a],[b])=>a.localeCompare(b));
-
-const derecha=entradas
-  .filter(([mes])=>Number(mes.substring(5,7))>=7)
-  .sort(([a],[b])=>a.localeCompare(b));
-
-const filas=Math.max(izquierda.length,derecha.length);
-
-let html='';
-
-for(let i=0;i<filas;i++){
-  html+=izquierda[i]?crearMes(...izquierda[i]):'<div></div>';
-  html+=derecha[i]?crearMes(...derecha[i]):'<div></div>';
+  canvas.style.display = '';
+  return new Chart(canvas, cfgGrafica(s, opts));
 }
 
-return html;
-})()}</div></div>`;box.appendChild(el);charts.push(new Chart($('c'+i),makeBarConfig(g,first.responsable)));i++}}
-
-
-$('export').onclick=()=>{
-  const d=filtered();
-
-  const rows=d.map(r=>({
-    'Municipio':r.municipio,
-    'Comunidad':r.comunidad,
-    'Caserío':r.caserio,
-    'Informante':r.responsable,
-   'Fecha':new Date(r.fecha+'T12:00:00'),
-    'Milímetros':Number(r.mm)||0
-  }));
-
-  const ws=XLSX.utils.json_to_sheet(rows);
-  // Formato de fecha dd/mm/aaaa
-for(let i=2;i<=rows.length+1;i++){
-  const celda=ws['E'+i];
-  if(celda){
-    celda.z='dd/mm/yyyy';
-  }
-}
-  // Ajustar ancho de columnas
-ws['!cols']=[
-  {wch:20}, // Municipio
-  {wch:24}, // Comunidad
-  {wch:30}, // Caserío
-  {wch:32}, // Informante
-  {wch:14}, // Fecha
-  {wch:14}  // Milímetros
-];
-
-// Activar autofiltro en los encabezados
-ws['!autofilter']={ref:ws['!ref']};
-
- // Crear libro Excel
-const wb=XLSX.utils.book_new();
-
-// ======================================================
-// HOJA 1: PLUVIOMETRÍA
-// ======================================================
-XLSX.utils.book_append_sheet(wb,ws,'Pluviometría');
-
-
-// ======================================================
-// HOJA 2: RESUMEN DEL PERÍODO
-// ======================================================
-
-// Informantes identificados
-const informantesResumen = new Set(
-  d.map(r => r.responsable)
-).size;
-
-// Registros analizados
-const registrosResumen = d.length;
-
-// Agrupar registros por informante
-const gruposResumen = new Map();
-
-d.forEach(r=>{
-  const clave = [
-    r.municipio,
-    r.comunidad,
-    r.caserio,
-    r.responsable
-  ].join('|');
-
-  if(!gruposResumen.has(clave)){
-    gruposResumen.set(clave,[]);
-  }
-
-  gruposResumen.get(clave).push(r);
-});
-
-
-// Precipitación acumulada por informante
-const acumuladosResumen = [...gruposResumen.values()].map(g =>
-  g.reduce((s,r)=>s + (Number(r.mm)||0),0)
-);
-
-// Promedio acumulado
-const precipitacionResumen = acumuladosResumen.length
-  ? acumuladosResumen.reduce((a,b)=>a+b,0) / acumuladosResumen.length
-  : 0;
-
-
-// Fechas únicas con lluvia y sin lluvia
-// Consolidar registros por fecha
-const lluviaPorFechaResumen = new Map();
-
-d.forEach(r => {
-  const fecha = r.fecha;
-  const mm = Number(r.mm) || 0;
-
-  if (!lluviaPorFechaResumen.has(fecha)) {
-    lluviaPorFechaResumen.set(fecha, 0);
-  }
-
-  lluviaPorFechaResumen.set(
-    fecha,
-    lluviaPorFechaResumen.get(fecha) + mm
-  );
-});
-
-// Clasificar cada fecha una sola vez
-const diasConLluviaResumen = [...lluviaPorFechaResumen.values()]
-  .filter(mm => mm > 0).length;
-
-const diasSinLluviaResumen = [...lluviaPorFechaResumen.values()]
-  .filter(mm => mm === 0).length;
-// Período máximo continuo sin lluvia
-const fechasOrdenadasResumen = [...lluviaPorFechaResumen.entries()]
-  .sort((a,b) => a[0].localeCompare(b[0]));
-
-let periodoMaxSinLluviaResumen = 0;
-let rachaActualResumen = 0;
-let inicioRachaResumen = '';
-let inicioPeriodoMaxResumen = '';
-let finPeriodoMaxResumen = '';
-
-fechasOrdenadasResumen.forEach(([fecha, mm]) => {
-  if (mm === 0) {
-    if (rachaActualResumen === 0) {
-      inicioRachaResumen = fecha;
-    }
-
-    rachaActualResumen++;
-
-    if (rachaActualResumen > periodoMaxSinLluviaResumen) {
-      periodoMaxSinLluviaResumen = rachaActualResumen;
-      inicioPeriodoMaxResumen = inicioRachaResumen;
-      finPeriodoMaxResumen = fecha;
-    }
-  } else {
-    rachaActualResumen = 0;
-    inicioRachaResumen = '';
-  }
-});
-
-// Máximo diario registrado
-const maximoResumen = d.length
-  ? Math.max(...d.map(r=>Number(r.mm)||0))
-  : 0;
-
-
-// Última lluvia registrada
-const lluviasResumen = d
-  .filter(r=>Number(r.mm)>0)
-  .sort((a,b)=>a.fecha.localeCompare(b.fecha));
-
-const ultimaLluviaResumen = lluviasResumen.length
-  ? lluviasResumen[lluviasResumen.length-1].fecha
-  : '';
-  // Cobertura espacial de la última lluvia
-let puntosConReporteUltimaLluvia = 0;
-let puntosConLluviaUltimaLluvia = 0;
-let porcentajeCoberturaUltimaLluvia = 0;
-
-if (ultimaLluviaResumen) {
-
-  // Registros correspondientes al día de la última lluvia
-  const registrosUltimaFecha = d.filter(
-    r => r.fecha === ultimaLluviaResumen
-  );
-
-  // Identificar puntos de monitoreo únicos
-  const obtenerPunto = r =>
-    `${r.municipio || ''}|${r.comunidad || ''}|${r.caserio || ''}|${r.responsable || r.informante || ''}`;
-
-  const puntosReportados = new Set(
-    registrosUltimaFecha.map(obtenerPunto)
-  );
-
-  const puntosConLluvia = new Set(
-    registrosUltimaFecha
-      .filter(r => Number(r.mm) > 0)
-      .map(obtenerPunto)
-  );
-
-  puntosConReporteUltimaLluvia = puntosReportados.size;
-  puntosConLluviaUltimaLluvia = puntosConLluvia.size;
-
-  porcentajeCoberturaUltimaLluvia =
-    puntosConReporteUltimaLluvia > 0
-      ? (puntosConLluviaUltimaLluvia /
-          puntosConReporteUltimaLluvia) * 100
-      : 0;
-}
-// Días desde la última lluvia
-let diasDesdeUltimaLluviaResumen = 0;
-// Fechas seleccionadas
-const desdeResumen = $('fDesde').value || '';
-const hastaResumen = $('fHasta').value || '';
-if (ultimaLluviaResumen && hastaResumen) {
-  const fechaUltimaResumen = new Date(
-    ultimaLluviaResumen + 'T00:00:00'
-  );
-
-  const fechaFinalResumen = new Date(
-    hastaResumen + 'T00:00:00'
-  );
-
-  diasDesdeUltimaLluviaResumen = Math.round(
-    (fechaFinalResumen - fechaUltimaResumen) /
-    (1000 * 60 * 60 * 24)
-  );
-}
-
-
-
-
-// Filtros seleccionados
-const municipioResumen = $('fMunicipio').value || 'Todos';
-const comunidadResumen = $('fComunidad').value || 'Todas';
-const caserioResumen = $('fCaserio').value || 'Todos';
-const informanteResumen = $('fResponsable').value || 'Todos';
-
-
-// Datos de la hoja Resumen
-const datosResumen = [
-  ['GENERADOR ANALÍTICO DE PLUVIOMETRÍA'],
-  ['Chiquimula - Monitoreo comunitario'],
-  [],
-  ['FILTROS APLICADOS',''],
-  ['Municipio',municipioResumen],
-  ['Comunidad',comunidadResumen],
-  ['Caserío',caserioResumen],
-  ['Informante',informanteResumen],
-['Desde',desdeResumen ? fmtDate(desdeResumen) : ''],
-['Hasta',hastaResumen ? fmtDate(hastaResumen) : ''],
-  [],
-  ['INDICADORES DEL PERÍODO',''],
-  ['Informantes identificados',informantesResumen],
-  ['Registros analizados',registrosResumen],
-  ['Precipitación promedio acumulada (mm)',
-    Number(precipitacionResumen.toFixed(1))
-  ],
-  ['Días con lluvia (>0 mm)',diasConLluviaResumen],
-  ['Días sin lluvia (0 mm)',diasSinLluviaResumen],
-  ['Máximo diario registrado (mm)',maximoResumen],
-  ['Período máximo continuo sin lluvia (días)',periodoMaxSinLluviaResumen],
-['Período máximo sin lluvia',
-    inicioPeriodoMaxResumen && finPeriodoMaxResumen
-        ? fmtDate(inicioPeriodoMaxResumen) + ' - ' + fmtDate(finPeriodoMaxResumen)
-        : ''
-],
-['Días desde la última lluvia',diasDesdeUltimaLluviaResumen],
- ['Última lluvia registrada',
-  ultimaLluviaResumen ? fmtDate(ultimaLluviaResumen) : ''
-],
-
-['Cobertura de la última lluvia',
-  ultimaLluviaResumen && puntosConReporteUltimaLluvia > 0
-    ? `Registrada en ${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos con reporte (${porcentajeCoberturaUltimaLluvia.toFixed(1)} %)`
-    : 'Sin información'
-]
-];
-
-
-// Crear hoja
-const wsResumen = XLSX.utils.aoa_to_sheet(datosResumen);
-
-
-// Anchos de columnas
-wsResumen['!cols']=[
-  {wch:38},
-  {wch:30}
-];
-
-
-// Agregar hoja al libro
-XLSX.utils.book_append_sheet(
-  wb,
-  wsResumen,
-  'Resumen'
-);
-
-
-// ======================================================
-// DESCARGAR ARCHIVO
-// ======================================================
-XLSX.writeFile(
-  wb,
-  'Reporte_Monitoreo_Pluviometrico.xlsx'
-);
-};
-// ======================================================
-// GENERAR INFORME PDF
-// ======================================================
-$('exportPDF').onclick = () => {
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    // Datos según filtros actualmente seleccionados
-    const d = filtered();
-
-    if (!d.length) {
-        alert('No existen registros para generar el informe.');
-        return;
-    }
-
-    const municipio = $('fMunicipio').value || 'Todos';
-    const comunidad = $('fComunidad').value || 'Todas';
-    const caserio = $('fCaserio').value || 'Todos';
-    const desde = $('fDesde').value || '';
-    const hasta = $('fHasta').value || '';
-
-    // Determinar automáticamente el tipo de informe
-    let tipoInforme = 'GENERAL';
-
-    if (municipio !== 'Todos') {
-        tipoInforme = 'MUNICIPAL';
-    }
-
-    if (comunidad !== 'Todas') {
-        tipoInforme = 'COMUNITARIO';
-    }
-
-    if (caserio !== 'Todos') {
-        tipoInforme = 'LOCAL';
-    }
-
-    // Informantes
-    const informantes = new Set(
-        d.map(r => r.responsable).filter(Boolean)
-    ).size;
-
-    // Precipitación acumulada por informante
-    const acumulados = new Map();
-
-    d.forEach(r => {
-        const responsable = r.responsable || 'Sin identificar';
-
-        acumulados.set(
-            responsable,
-            (acumulados.get(responsable) || 0) + (Number(r.mm) || 0)
-        );
-    });
-
-    const valoresAcumulados = [...acumulados.values()];
-
-    const precipitacionPromedio = valoresAcumulados.length
-        ? valoresAcumulados.reduce((a,b) => a+b, 0) / valoresAcumulados.length
-        : 0;
-
-    // Consolidar lluvia por fecha
-    const lluviaPorFecha = new Map();
-
-    d.forEach(r => {
-        const fecha = r.fecha;
-        const mm = Number(r.mm) || 0;
-
-        lluviaPorFecha.set(
-            fecha,
-            (lluviaPorFecha.get(fecha) || 0) + mm
-        );
-    });
-
-    const diasConLluvia = [...lluviaPorFecha.values()]
-        .filter(mm => mm > 0).length;
-
-    const diasSinLluvia = [...lluviaPorFecha.values()]
-        .filter(mm => mm === 0).length;
-
-    const maximoDiario = d.length
-        ? Math.max(...d.map(r => Number(r.mm) || 0))
-        : 0;
-
-    // Última lluvia registrada
-    const fechasConLluvia = [...lluviaPorFecha.entries()]
-        .filter(([fecha,mm]) => mm > 0)
-        .map(([fecha]) => fecha)
-        .sort();
-
-    const ultimaLluvia = fechasConLluvia.length
-        ? fechasConLluvia[fechasConLluvia.length - 1]
-        : '';
-  // Cobertura espacial de la última lluvia registrada
-let puntosConReporteUltimaLluvia = 0;
-let puntosConLluviaUltimaLluvia = 0;
-let porcentajePuntosUltimaLluvia = 0;
-
-if (ultimaLluvia) {
-
-    const registrosUltimaLluvia = d.filter(
-        r => r.fecha === ultimaLluvia
-    );
-
-    const puntosReportados = new Set(
-        registrosUltimaLluvia
-            .map(r => r.responsable)
-            .filter(Boolean)
-    );
-
-    const puntosConLluvia = new Set(
-        registrosUltimaLluvia
-            .filter(r => (Number(r.mm) || 0) > 0)
-            .map(r => r.responsable)
-            .filter(Boolean)
-    );
-
-    puntosConReporteUltimaLluvia = puntosReportados.size;
-    puntosConLluviaUltimaLluvia = puntosConLluvia.size;
-
-    porcentajePuntosUltimaLluvia =
-        puntosConReporteUltimaLluvia > 0
-            ? (puntosConLluviaUltimaLluvia /
-               puntosConReporteUltimaLluvia) * 100
-            : 0;
-}
-// Período máximo continuo sin lluvia
-// Solo considera consecutivos los días que realmente tienen registro.
-// Si falta una fecha, la racha se interrumpe.
-
-const fechasOrdenadasPDF = [...lluviaPorFecha.entries()]
-    .sort((a,b) => a[0].localeCompare(b[0]));
-
-let periodoMaxSinLluviaPDF = 0;
-let rachaActualPDF = 0;
-let inicioRachaPDF = '';
-let inicioPeriodoMaxPDF = '';
-let finPeriodoMaxPDF = '';
-let fechaAnteriorPDF = '';
-
-fechasOrdenadasPDF.forEach(([fecha, mm]) => {
-
-    // Verificar si esta fecha es consecutiva respecto de la anterior
-    let esConsecutivaPDF = false;
-
-    if (fechaAnteriorPDF) {
-        const anteriorPDF = new Date(fechaAnteriorPDF + 'T00:00:00');
-        const actualPDF = new Date(fecha + 'T00:00:00');
-
-        const diferenciaDiasPDF = Math.round(
-            (actualPDF - anteriorPDF) / (1000 * 60 * 60 * 24)
-        );
-
-        esConsecutivaPDF = diferenciaDiasPDF === 1;
-    }
-
-    if (mm === 0) {
-
-        // Iniciar nueva racha si es el primer registro
-        // o si la fecha anterior no fue consecutiva
-        if (rachaActualPDF === 0 || !esConsecutivaPDF) {
-            rachaActualPDF = 1;
-            inicioRachaPDF = fecha;
-        } else {
-            rachaActualPDF++;
-        }
-
-        // Guardar la racha máxima encontrada
-        if (rachaActualPDF > periodoMaxSinLluviaPDF) {
-            periodoMaxSinLluviaPDF = rachaActualPDF;
-            inicioPeriodoMaxPDF = inicioRachaPDF;
-            finPeriodoMaxPDF = fecha;
-        }
-
-    } else {
-
-        // Una lluvia > 0 mm rompe la racha
-        rachaActualPDF = 0;
-        inicioRachaPDF = '';
-    }
-
-    fechaAnteriorPDF = fecha;
-});
-
-// Días desde la última lluvia
-let diasDesdeUltimaLluviaPDF = 0;
-
-if (ultimaLluvia && hasta) {
-
-    const fechaUltimaPDF = new Date(ultimaLluvia + 'T00:00:00');
-    const fechaHastaPDF = new Date(hasta + 'T00:00:00');
-
-    diasDesdeUltimaLluviaPDF = Math.round(
-        (fechaHastaPDF - fechaUltimaPDF) /
-        (1000 * 60 * 60 * 24)
-    );
-}
-    // Función para mostrar fechas
-    const fechaTexto = (fecha) => {
-        if (!fecha) return 'Sin registro';
-
-        const partes = fecha.split('-');
-
-        return partes.length === 3
-            ? `${partes[2]}/${partes[1]}/${partes[0]}`
-            : fecha;
-    };
-
-    // ==================================================
-    // CONSTRUCCIÓN DEL PDF
-    // ==================================================
-
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(16);
-    doc.text(
-        `INFORME ${tipoInforme} DE MONITOREO PLUVIOMÉTRICO`,
-        105,
-        22,
-        { align:'center' }
-    );
-
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-    doc.text(
-        'Generador Analítico de Pluviometría',
-        105,
-        30,
-        { align:'center' }
-    );
-
-    doc.setDrawColor(30,80,120);
-    doc.line(20,35,190,35);
-
-    // Ubicación
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(12);
-    doc.text('Ámbito del informe',20,47);
-
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-
-    let y = 56;
-
-    doc.text(`Municipio: ${municipio}`,20,y);
-    y += 7;
-
-    if (comunidad !== 'Todas') {
-        doc.text(`Comunidad: ${comunidad}`,20,y);
-        y += 7;
-    }
-
-    if (caserio !== 'Todos') {
-        doc.text(`Caserío: ${caserio}`,20,y);
-        y += 7;
-    }
-
-    doc.text(
-        `Período: ${fechaTexto(desde)} al ${fechaTexto(hasta)}`,
-        20,
-        y
-    );
-
-    y += 14;
-
-    // Indicadores
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(12);
-    doc.text('Indicadores del período',20,y);
-
-    y += 10;
-
-  const indicadores = [
-    ['Informantes identificados', informantes],
-    ['Registros analizados', d.length],
-    ['Precipitación promedio acumulada', `${precipitacionPromedio.toFixed(1)} mm`],
-    ['Días con lluvia (>0 mm)', diasConLluvia],
-    ['Días con registro sin lluvia (0 mm)', diasSinLluvia],
-    ['Máximo diario registrado', `${maximoDiario} mm`],
-    ['Período máximo continuo sin lluvia', `${periodoMaxSinLluviaPDF} días`],
-    ['Período máximo sin lluvia',
-        inicioPeriodoMaxPDF && finPeriodoMaxPDF
-            ? `${fechaTexto(inicioPeriodoMaxPDF)} - ${fechaTexto(finPeriodoMaxPDF)}`
-            : 'Sin registro'
-    ],
-  ['Días desde la última lluvia',
-  diasDesdeUltimaLluviaPDF === 1
-    ? '1 día'
-    : `${diasDesdeUltimaLluviaPDF} días`
-],
-['Última lluvia registrada', fechaTexto(ultimaLluvia)],
-['Cobertura de la última lluvia',
-  ultimaLluvia && puntosConReporteUltimaLluvia > 0
-    ? `${puntosConLluviaUltimaLluvia} de ${puntosConReporteUltimaLluvia} puntos (${porcentajePuntosUltimaLluvia.toFixed(1)} %)`
-    : 'Sin registro'
-]
-];
-
-    doc.setFontSize(10);
-
-    indicadores.forEach(([nombre,valor]) => {
-
-        doc.setFont('helvetica','normal');
-        doc.text(nombre,25,y);
-
-        doc.setFont('helvetica','bold');
-        doc.text(String(valor),180,y,{align:'right'});
-
-        doc.setDrawColor(225);
-        doc.line(20,y+2,190,y+2);
-
-        y += 9;
-    });
-
-    // Lectura automática
-    y += 7;
-
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(12);
-    doc.text('Lectura del período',20,y);
-
-    y += 9;
-
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-
-    const lectura =
-    `Durante el período analizado se procesaron ${d.length} registros ` +
-    `correspondientes a ${informantes} informantes. La precipitación ` +
-    `promedio acumulada fue de ${precipitacionPromedio.toFixed(1)} mm. ` +
- `Se identificaron ${diasConLluvia} días con lluvia (>0 mm) y ${diasSinLluvia} días sin lluvia (0 mm). ` +
-`El máximo diario registrado fue de ${maximoDiario} mm. ` +
-`El período continuo más prolongado sin lluvia fue de ${periodoMaxSinLluviaPDF} días` +     
-    (inicioPeriodoMaxPDF && finPeriodoMaxPDF
-        ? `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. `
-        : `. `) +
-   (
-  ultimaLluvia
-    ? (
-        `La última lluvia registrada ocurrió el ${fechaTexto(ultimaLluvia)}` +
-        (
-          puntosConReporteUltimaLluvia > 0
-            ? ` y se presentó en ${puntosConLluviaUltimaLluvia} de los ${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día (${porcentajePuntosUltimaLluvia.toFixed(1)} %)` +
-              (
-                porcentajePuntosUltimaLluvia < 50
-                  ? `, lo que evidencia una distribución territorial limitada de la precipitación. `
-                  : porcentajePuntosUltimaLluvia < 80
-                    ? `, mostrando una distribución territorial parcial de la precipitación. `
-                    : `, mostrando una distribución territorial amplia de la precipitación. `
-              )
-            : `. `
-        ) +
-        (
-          diasDesdeUltimaLluviaPDF === 0
-            ? `La última lluvia coincide con la fecha de cierre del período analizado.`
-            : diasDesdeUltimaLluviaPDF === 1
-              ? `Al cierre del período analizado había transcurrido 1 día calendario desde esa lluvia.`
-              : `Al cierre del período analizado habían transcurrido ${diasDesdeUltimaLluviaPDF} días calendario desde esa lluvia.`
-        )
-      )
-    : `No se identificaron registros de lluvia durante el período analizado.`
-)
-    const lineas = doc.splitTextToSize(lectura,170);
-
-doc.text(lineas,20,y,{
-    align:'justify',
-    maxWidth:170
-});
-// ==============================================
-// INTERPRETACIÓN AGROCLIMÁTICA
-// ==============================================
-
-// Ubicar el bloque después de la Lectura del período
-y += (lineas.length * 5) + 5;
-
-doc.setFont('helvetica','bold');
-doc.setFontSize(12);
-doc.setTextColor(0);
-doc.text('Interpretación agroclimática',20,y);
-
-y += 7;
-
-doc.setFont('helvetica','normal');
-doc.setFontSize(10);
-
-let textoAgro = '';
-
-// Interpretación del período máximo sin lluvia
-if (periodoMaxSinLluviaPDF > 0) {
-
-    textoAgro =
-        `Durante el período analizado se identificó un período máximo de ` +
-        `${periodoMaxSinLluviaPDF} días continuos sin lluvia`;
-
-    if (inicioPeriodoMaxPDF && finPeriodoMaxPDF) {
-
-        textoAgro +=
-            `, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} ` +
-            `y el ${fechaTexto(finPeriodoMaxPDF)}`;
-    }
-
-   // Interpretación según duración del período sin lluvia
-if (periodoMaxSinLluviaPDF <= 5) {
-
-    textoAgro +=
-        `. Este intervalo representa una interrupción corta de las precipitaciones ` +
-        `dentro del período de monitoreo y se recomienda mantener el seguimiento ` +
-        `del comportamiento de la lluvia.`;
-
-} else if (periodoMaxSinLluviaPDF <= 10) {
-
-    textoAgro +=
-        `. Este intervalo representa una interrupción moderada de las precipitaciones ` +
-        `y constituye una condición que requiere atención y seguimiento de la ` +
-        `disponibilidad de lluvia en los días posteriores.`;
-
-} else if (periodoMaxSinLluviaPDF <= 15) {
-
-    textoAgro +=
-        `. Este intervalo representa una interrupción prolongada de las precipitaciones ` +
-        `y constituye una condición agroclimática relevante que amerita seguimiento, ` +
-        `especialmente en zonas con limitada disponibilidad de humedad en el suelo.`;
-
-} else {
-
-    textoAgro +=
-        `. Este intervalo representa una interrupción muy prolongada de las precipitaciones ` +
-        `y constituye una condición agroclimática de especial atención. Se recomienda ` +
-        `fortalecer el seguimiento de la lluvia y de las condiciones de humedad disponibles ` +
-        `en el territorio.`;
-}
-
-} else {
-
-    textoAgro =
-        `Durante el período analizado no se identificaron períodos continuos sin lluvia ` +
-        `dentro de los registros disponibles.`;
-}
-
-// Situación al cierre del período
-if (ultimaLluvia) {
-
-    // Tiempo transcurrido desde la última lluvia
-    if (diasDesdeUltimaLluviaPDF === 0) {
-
-        textoAgro +=
-            ` Al cierre del período se registró precipitación, por lo que la última ` +
-            `lluvia coincide con la fecha final analizada.`;
-
-    } else if (diasDesdeUltimaLluviaPDF === 1) {
-
-        textoAgro +=
-            ` Al cierre del período había transcurrido 1 día desde la última lluvia registrada.`;
-
-    } else {
-
-        textoAgro +=
-            ` Al cierre del período habían transcurrido ` +
-            `${diasDesdeUltimaLluviaPDF} días desde la última lluvia registrada.`;
-    }
-
-    // Cobertura territorial de la última lluvia
-    if (puntosConReporteUltimaLluvia > 0) {
-
-        textoAgro +=
-            ` Esta precipitación se presentó en ${puntosConLluviaUltimaLluvia} de los ` +
-            `${puntosConReporteUltimaLluvia} puntos de monitoreo que reportaron ese día ` +
-            `(${porcentajePuntosUltimaLluvia.toFixed(1)} %).`;
-
-        if (porcentajePuntosUltimaLluvia < 50) {
-
-            textoAgro +=
-                ` Esto indica que el evento tuvo una distribución territorial limitada ` +
-                `y no necesariamente representa una recuperación generalizada de las ` +
-                `precipitaciones en el territorio monitoreado.`;
-
-        } else if (porcentajePuntosUltimaLluvia < 80) {
-
-            textoAgro +=
-                ` Esto indica una distribución territorial parcial de la precipitación, ` +
-                `por lo que las condiciones de lluvia pueden variar entre los diferentes ` +
-                `puntos del territorio monitoreado.`;
-
-        } else {
-
-            textoAgro +=
-                ` Esto indica una distribución territorial amplia de la precipitación ` +
-                `entre los puntos de monitoreo que reportaron ese día.`;
-        }
-    }
-}
-
-// Dividir el texto para ajustarlo al ancho del PDF
-const lineasAgro = doc.splitTextToSize(textoAgro,170);
-
-doc.text(lineasAgro,20,y,{
-    align:'justify',
-    maxWidth:170
-});
-y += (lineasAgro.length * 5) + 8;
-// ==============================================
-// PIE DE PÁGINA - PÁGINA 1
-// ==============================================
-
-// Línea separadora
-doc.setDrawColor(210);
-doc.line(20, 282, 190, 282);
-
-// Fuente
-doc.setFont('helvetica','normal');
-doc.setFontSize(8);
-doc.setTextColor(90);
-
-doc.text(
-    'Fuente: Monitoreo pluviométrico comunitario.',
-    20,
-    288
-);
-
-// Instituciones
-doc.text(
-    'CRS - MAGA',
-    190,
-    288,
-    {align:'right'}
-);
-// ==================================================
-// PÁGINA 2 - COMPORTAMIENTO DE LA PRECIPITACIÓN
-// ==================================================
-
-doc.addPage();
-
-// Título
-doc.setTextColor(0);
-doc.setFont('helvetica','bold');
-doc.setFontSize(16);
-
-doc.text(
-    'COMPORTAMIENTO DE LA PRECIPITACIÓN',
-    105,
-    22,
-    { align:'center' }
-);
-
-// Subtítulo
-doc.setFont('helvetica','normal');
-doc.setFontSize(10);
-
-doc.text(
-    `${municipio}${comunidad !== 'Todas' ? ' - ' + comunidad : ''}${caserio !== 'Todos' ? ' - ' + caserio : ''}`,
-    105,
-    30,
-    { align:'center' }
-);
-
-// Línea institucional
-doc.setDrawColor(30,80,120);
-doc.line(20,35,190,35);
-
-// Encabezado de gráfica
-doc.setFont('helvetica','bold');
-doc.setFontSize(12);
-doc.text('Comportamiento de la lluvia durante el período',20,48);
-
-// ==================================================
-// GRÁFICA DE PRECIPITACIÓN DEL VISOR
-// ==================================================
-
-// Seleccionar automáticamente la gráfica correcta según el nivel del informe
-let canvasGraficaPDF = null;
-
-// GENERAL O MUNICIPAL
-if (
-    comunidad === 'Todas' &&
-    caserio === 'Todos'
-) {
-
-    canvasGraficaPDF = document.getElementById('globalChart');
-
-} else {
-
-    // COMUNIDAD, CASERÍO O INFORMANTE
-    const graficasIndividuales = Array.from(
-        document.querySelectorAll('#observers .smallchart canvas')
-    ).filter(canvas =>
-        canvas.width > 0 && canvas.height > 0
-    );
-
-    if (graficasIndividuales.length > 0) {
-        canvasGraficaPDF = graficasIndividuales[0];
-    }
-}
-if (canvasGraficaPDF) {
-
-    const imagenGraficaPDF = canvasGraficaPDF.toDataURL(
-        'image/png',
-        1.0
-    );
-
-    doc.addImage(
-        imagenGraficaPDF,
-        'PNG',
-        20,   // posición X
-        55,   // posición Y
-        170,  // ancho
-        90    // alto
-    );
-
-} else {
-
-    doc.setDrawColor(210);
-    doc.rect(20,55,170,90);
-
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10);
-    doc.setTextColor(120);
-
-    doc.text(
-        'No fue posible generar la gráfica de precipitación.',
-        105,
-        100,
-        { align:'center' }
-    );
-}
-
-// ==================================================
-// LÍNEA DE TIEMPO DEL PERÍODO ANALIZADO
-// ==================================================
-
-doc.setTextColor(0);
-doc.setFont('helvetica','bold');
-doc.setFontSize(12);
-
-doc.text('Línea de tiempo del período',20,165);
-
-
-// --------------------------------------------------
-// CONFIGURACIÓN DE LA LÍNEA
-// --------------------------------------------------
-
-const xInicioTL = 25;
-const xFinTL = 185;
-const yTL = 195;
-
-
-// Convertir fechas para calcular posiciones
-const fechaInicioTL = new Date(desde + 'T00:00:00');
-const fechaFinTL = new Date(hasta + 'T00:00:00');
-
-const totalDiasTL = Math.max(
-  1,
-  Math.round(
-    (fechaFinTL - fechaInicioTL) /
-    (1000 * 60 * 60 * 24)
-  )
-);
-
-
-// Función para convertir una fecha en posición X
-const posicionFechaTL = (fecha) => {
-
-  if (!fecha) return xInicioTL;
-
-  const f = new Date(fecha + 'T00:00:00');
-
-  const dias = Math.round(
-    (f - fechaInicioTL) /
-    (1000 * 60 * 60 * 24)
-  );
-
-  return xInicioTL +
-    (dias / totalDiasTL) *
-    (xFinTL - xInicioTL);
-};
-
-
-// --------------------------------------------------
-// LÍNEA BASE DEL PERÍODO COMPLETO
-// --------------------------------------------------
-
-doc.setDrawColor(170);
-doc.setLineWidth(1);
-
-doc.line(
-  xInicioTL,
-  yTL,
-  xFinTL,
-  yTL
-);
-
-
-// --------------------------------------------------
-// PERÍODO MÁXIMO CONTINUO SIN LLUVIA
-// --------------------------------------------------
-
-if (
-  inicioPeriodoMaxPDF &&
-  finPeriodoMaxPDF &&
-  periodoMaxSinLluviaPDF > 0
-) {
-
-  const xInicioSeco =
-    posicionFechaTL(inicioPeriodoMaxPDF);
-
-  const xFinSeco =
-    posicionFechaTL(finPeriodoMaxPDF);
-
-
-  // Tramo seco destacado
-  doc.setDrawColor(210,140,40);
-  doc.setLineWidth(4);
-
-  doc.line(
-    xInicioSeco,
-    yTL,
-    xFinSeco,
-    yTL
-  );
-
-
-  // Puntos inicio y fin
-  doc.setFillColor(210,140,40);
-
-  doc.circle(
-    xInicioSeco,
-    yTL,
-    2.3,
-    'F'
-  );
-
-  doc.circle(
-    xFinSeco,
-    yTL,
-    2.3,
-    'F'
-  );
-
-
-  // Número de días
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(12);
-  doc.setTextColor(0);
-
-  // Posición inteligente de la etiqueta del período seco
-let xEtiquetaPeriodoSeco = (xInicioSeco + xFinSeco) / 2;
-
-// Si la última lluvia está muy cerca del final del período seco,
-// desplazar ligeramente la etiqueta hacia la izquierda
-if (ultimaLluvia) {
-    const xUltimaLluviaEtiqueta = posicionFechaTL(ultimaLluvia);
-
-    if (Math.abs(xUltimaLluviaEtiqueta - xFinSeco) < 18) {
-        xEtiquetaPeriodoSeco -= 10;
-    }
-}
-
-// Mantener la etiqueta dentro de la línea de tiempo
-xEtiquetaPeriodoSeco = Math.max(
-    xInicioTL + 15,
-    Math.min(xEtiquetaPeriodoSeco, xFinTL - 15)
-);
-
-doc.text(
-  `${periodoMaxSinLluviaPDF} días continuos sin lluvia`,
-    xEtiquetaPeriodoSeco,
-    184,
-    {align:'center'}
-);
-
-
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8);
-  doc.setTextColor(70);
-
-// Fechas del período máximo sin lluvia
-doc.setFont('helvetica','normal');
-doc.setFontSize(8);
-doc.setTextColor(70);
-
-// Fecha de inicio del período máximo sin lluvia
-doc.text(
-    fechaTexto(inicioPeriodoMaxPDF),
-    xInicioSeco,
-    204,
-    {align:'left'}
-);
-
-// Fecha de finalización del período seco
-doc.setFont('helvetica','normal');
-doc.setFontSize(8);
-doc.setTextColor(70);
-
-doc.text(
-    fechaTexto(finPeriodoMaxPDF),
-    xFinSeco + 4,
-    yTL + 9,
-    {align:'left'}
-);
-
-// Etiqueta inteligente del final del período seco
-doc.setFont('helvetica','bold');
-doc.setFontSize(7);
-doc.setTextColor(90);
-
-// Posición normal: a la derecha del punto
-let xEtiquetaFinSeco = xFinSeco + 4;
-let alineacionFinSeco = 'left';
-
-// Si el final del período seco está cerca del cierre,
-// mover la etiqueta hacia la izquierda
-if ((xFinTL - xFinSeco) < 22) {
-    xEtiquetaFinSeco = xFinSeco - 4;
-    alineacionFinSeco = 'right';
-}
-
-doc.text(
-  'Fin período sin lluvia',
-    xEtiquetaFinSeco,
-    yTL + 14,
-    {align: alineacionFinSeco}
-);
-}
-
-
-// --------------------------------------------------
-// INICIO DEL PERÍODO ANALIZADO
-// --------------------------------------------------
-
-doc.setFillColor(20,72,92);
-
-doc.circle(
-  xInicioTL,
-  yTL,
-  2.5,
-  'F'
-);
-
-doc.setFont('helvetica','normal');
-doc.setFontSize(8);
-doc.setTextColor(70);
-
-doc.text(
-  fechaTexto(desde),
-  xInicioTL,
-  214,
-  {align:'center'}
-);
-
-doc.text(
-  'Inicio',
-  xInicioTL,
-  219,
-  {align:'center'}
-);
-
-
-// --------------------------------------------------
-// FIN DEL PERÍODO ANALIZADO
-// --------------------------------------------------
-
-doc.setFillColor(20,72,92);
-
-doc.circle(
-  xFinTL,
-  yTL,
-  2.5,
-  'F'
-);
-
-doc.text(
-  fechaTexto(hasta),
-  xFinTL,
-  214,
-  {align:'center'}
-);
-
-doc.text(
-  'Cierre',
-  xFinTL,
-  219,
-  {align:'center'}
-);
-
-
-// --------------------------------------------------
-// ÚLTIMA LLUVIA REGISTRADA
-// --------------------------------------------------
-
-if (ultimaLluvia) {
-
-  const xUltimaLluvia =
-    posicionFechaTL(ultimaLluvia);
-
-  // Punto de última lluvia
-  doc.setFillColor(40,120,180);
-
-  doc.circle(
-    xUltimaLluvia,
-    yTL,
-    3,
-    'F'
-  );
-
-  // Línea guía vertical
-  doc.setDrawColor(40,120,180);
-  doc.setLineWidth(0.5);
-
-  doc.line(
-    xUltimaLluvia,
-    yTL - 3,
-    xUltimaLluvia,
-    yTL - 14
-  );
-
-  // Etiqueta superior de última lluvia
-doc.setFont('helvetica','bold');
-doc.setFontSize(7);
-doc.setTextColor(40,90,140);
-
-doc.text(
-    'Última lluvia',
-    xUltimaLluvia,
-    yTL - 20,
-    {align:'center'}
-);
-
-// Fecha de última lluvia
-doc.setFont('helvetica','normal');
-doc.setFontSize(7);
-doc.setTextColor(70);
-
-doc.text(
-    fechaTexto(ultimaLluvia),
-    xUltimaLluvia,
-    yTL - 15,
-    {align:'center'}
-);
-
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(7);
-
-  doc.text(
-    fechaTexto(ultimaLluvia),
-    xUltimaLluvia,
-    yTL - 15,
-    {align:'center'}
-  );
-}
-
-  
-// --------------------------------------------------
-// EXPLICACIÓN
-// --------------------------------------------------
-
-doc.setFont('helvetica','normal');
-doc.setFontSize(9);
-doc.setTextColor(50);
-
-const textoTL = doc.splitTextToSize(
-  `La línea representa el período analizado. El tramo resaltado identifica el período continuo más prolongado sin lluvia, de ${periodoMaxSinLluviaPDF} días, comprendido entre el ${fechaTexto(inicioPeriodoMaxPDF)} y el ${fechaTexto(finPeriodoMaxPDF)}. La última lluvia registrada ocurrió el ${fechaTexto(ultimaLluvia)}.`,
-  160
-);
-
-doc.text(
-  textoTL,
-  105,
-  232,
-  {align:'center'}
-);
-
-// Pie página 2
-doc.setFontSize(8);
-doc.setTextColor(90);
-
-doc.text(
-    'Fuente: Monitoreo pluviométrico comunitario.',
-    20,
-    282
-);
-
-doc.text(
-    'CRS - MAGA',
-    190,
-    282,
-    { align:'right' }
-);
-    // Nombre automático del archivo
-    const limpiarNombre = texto =>
-        texto
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g,'')
-            .replace(/\s+/g,'_')
-            .replace(/[^\w-]/g,'');
-
-    let nombreLugar = municipio;
-
-    if (comunidad !== 'Todas') {
-        nombreLugar = comunidad + '_' + municipio;
-    }
-
-    if (caserio !== 'Todos') {
-        nombreLugar = caserio + '_' + comunidad + '_' + municipio;
-    }
-
-    const nombreArchivo =
-        'Informe_Pluviometrico_' +
-        limpiarNombre(nombreLugar) +
-        '.pdf';
-
-    doc.save(nombreArchivo);
-};
-['fMunicipio','fComunidad','fCaserio'].forEach(id=>$(id).addEventListener('change',cascade));['fResponsable','fDesde','fHasta'].forEach(id=>$(id).addEventListener('change',render));fetch('datos.json?ts='+Date.now())
-  .then(r=>{if(!r.ok)throw new Error('No se pudo cargar datos.json');return r.json();})
-  .then(j=>{
-    allData=Array.isArray(j)?j:(j.datos||[]);
-    initialize(true);
-  })
-  .catch(err=>{
-    console.error('Error cargando datos de Kobo:',err);
-    initialize(true);
+function htmlTimeline(s){
+  if (!s.fechas.length) return '<p class="nota">Sin registros en este período.</p>';
+  const meses = new Map();
+  s.fechas.forEach((f, i) => {
+    const k = f.slice(0, 7);
+    if (!meses.has(k)) meses.set(k, []);
+    meses.get(k).push([f, s.mm[i]]);
   });
-</script>
-<script>
-(function(){
-function override(){
- if(typeof window.buildGlobalChart!=="function") return false;
- const original=window.buildGlobalChart;
- window.buildGlobalChart=function(rows){
-   const map=new Map();
-   rows.forEach(r=>{
-      const d=r.fecha||r.Fecha;
-      const mm=Number(r.mm??r.MM??0);
-      if(!map.has(d)) map.set(d,{sum:0,n:0});
-      const o=map.get(d); o.sum+=mm; o.n++;
-   });
-   const labels=[...map.keys()].sort();
-   const avg=labels.map(k=>map.get(k).sum/map.get(k).n);
-   let acc=0;
-   const cum=avg.map(v=>acc+=v);
-   if(window.globalChart) window.globalChart.destroy();
-   const ctx=document.getElementById('globalChart').getContext('2d');
-   window.globalChart=new Chart(ctx,{
-    data:{labels,datasets:[
-      {type:'bar',label:'Promedio diario (mm)',data:avg,backgroundColor:'#14845c'},
-      {type:'line',label:'Acumulado promedio (mm)',data:cum,yAxisID:'y1',borderColor:'#1565c0',pointRadius:0,borderWidth:3,tension:.25, pointRadius:0, pointHoverRadius:4, borderWidth:3, tension:0.22, fill:false, spanGaps:true}
-    ]},
-    options:{responsive:true,
-      scales:{
-        y:{title:{display:true,text:'Promedio diario (mm)'}},
-        y1:{position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Acumulado promedio (mm)'}}
-      }}
-   });
- };
- return true;
+  return [...meses.entries()].map(([k, dias]) => {
+    const [y, m] = k.split('-');
+    const ticks = dias.map(([f, v]) => `<i class="${v === null ? 'n' : v > 0 ? 'r' : ''}" title="${fmtC(f)}: ${v === null ? 'sin reporte' : nf(v, 1) + ' mm'}"></i>`).join('');
+    return `<div><h4>${MESES_L[+m - 1].charAt(0).toUpperCase() + MESES_L[+m - 1].slice(1)} de ${y}</h4><div class="t">${ticks}</div></div>`;
+  }).join('');
 }
-let t=setInterval(()=>{if(override()) clearInterval(t);},300);
-})();
-</script>
 
-</body></html>
+function setBanner(el, estado, titulo, detalle, balde){
+  el.className = `banner e-${estado}`;
+  el.innerHTML = (balde ? `<div class="balde-w">${balde}</div>` : `<span style="color:var(--sol)">${ico(ICONO_ESTADO[estado], true)}</span>`) +
+    `<div class="bi"><div class="bt">${esc(titulo)}</div><div class="bd">${esc(detalle)}</div></div>`;
+}
+const baldeHTML = (g) => {
+  const h = g.pctReserva == null ? 0 : Math.max(3, Math.min(100, Math.round(g.pctReserva)));
+  return `<div class="balde" role="img" aria-label="Humedad estimada del suelo: ${g.pctReserva == null ? 'sin datos' : Math.round(g.pctReserva) + ' por ciento'}"><i style="height:${h}%"></i></div><span>Humedad</span>`;
+};
+
+/* =========================== INICIO =========================== */
+function renderInicio(){
+  const pts = [...S.puntos.values()];
+  if (!pts.length){
+    $('#inicioSub').textContent = 'Todavía no hay registros para mostrar.';
+    setBanner($('#inicioAlerta'), 'sindatos', 'Sin datos', 'Cuando los observadores envíen sus registros aparecerán aquí.');
+    $('#inicioSpark').innerHTML = '';
+    return;
+  }
+  const muns = filasMunicipios(pts);
+  const repHoy = new Set(S.all.filter(r => r.fecha === S.ref).map(r => r.municipio)).size;
+  const et = etiquetaUltimoDato();
+  $('#inicioSub').textContent = `Último dato: ${et === fmt(S.ref) ? et : et + ' (' + fmt(S.ref) + ')'} · ${repHoy} de ${muns.length} ${plural(muns.length, 'municipio reportó', 'municipios reportaron')} ese día.`;
+  const enAlerta = muns.filter(m => m.g.k > 0);
+  if (enAlerta.length){
+    const peor = enAlerta.some(m => m.g.nCritico > 0) ? 'critico' : 'alerta';
+    setBanner($('#inicioAlerta'), peor,
+      `Al ${fmtC(S.ref)}: ${enAlerta.length} ${plural(enAlerta.length, 'municipio tiene', 'municipios tienen')} puntos en alerta o crítico por falta de lluvia`,
+      `${enAlerta.slice(0, 4).map(m => m.mun).join(', ')}${enAlerta.length > 4 ? ' y otros' : ''}. Entra al panel municipal para ver el detalle.`);
+  } else if (muns.every(m => m.g.estado === 'sindatos')){
+    setBanner($('#inicioAlerta'), 'sindatos', 'Datos insuficientes', 'Aún no hay suficientes reportes para estimar la humedad del suelo.');
+  } else {
+    setBanner($('#inicioAlerta'), 'normal', `Al ${fmtC(S.ref)}: sin alertas por falta de lluvia`, 'Ningún punto de monitoreo está en alerta ni crítico.');
+  }
+  // tendencia: lluvia promedio acumulada de los últimos 30 días
+  const desde = toS(toT(S.ref) - 29 * DAY);
+  const s = serieDiaria(S.all.filter(r => r.fecha >= desde));
+  let svg = '';
+  if (s.acum.length > 1){
+    const mx = Math.max(...s.acum, 1), n = s.acum.length;
+    const pts2 = s.acum.map((v, i) => `${(i / (n - 1) * 600).toFixed(1)},${(54 - v / mx * 48).toFixed(1)}`).join(' ');
+    svg = `<svg viewBox="0 0 600 60" preserveAspectRatio="none" role="img" aria-label="Tendencia de lluvia acumulada de los últimos 30 días"><polyline points="${pts2}" fill="none" stroke="#14845c" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+  $('#inicioSpark').innerHTML = `<div><h2>Últimos 30 días en Chiquimula</h2><p class="sub">Lluvia promedio acumulada</p></div>${svg}<div style="text-align:right"><b style="font-size:24px">${nf(s.acum.length ? s.acum[s.acum.length - 1] : 0, 0)} mm</b><p class="sub">promedio de los puntos</p></div>`;
+}
+
+/* =========================== COMUNITARIO =========================== */
+function mensajeComunidad(g){
+  const dias = g.dias, ult = g.ultima;
+  switch (g.estado){
+    case 'normal': return ['Todo en orden: la tierra tiene humedad', `La última lluvia fue ${cuando(ult)}.${g.diasAgota ? ` Si no llueve, la humedad alcanzaría para unos ${g.diasAgota} días.` : ''}`];
+    case 'atencion': return [dias ? `Atención: ${dias} ${plural(dias, 'día', 'días')} sin lluvia` : 'Atención: la humedad va bajando', `Todavía hay humedad en la tierra, pero está bajando. La última lluvia fue ${cuando(ult)}. Si pasan más días sin llover, empezará a faltar agua.${g.k > 0 ? ` ${plural(g.k, 'Un punto de la comunidad está', g.k + ' puntos de la comunidad están')} en alerta o crítico.` : ''}`];
+    case 'alerta': return ['Alerta: la tierra se está secando', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Si no llueve pronto, la humedad podría llegar al límite en unos ${g.diasAgota ?? 'pocos'} días.`];
+    case 'critico': return ['Crítico: la tierra casi no tiene humedad', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Los cultivos podrían empezar a marchitarse si no llueve pronto.`];
+    default: return ['Pocos datos para evaluar la humedad', `Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada.`];
+  }
+}
+function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com })); } catch (e) {} }
+function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; } } catch (e) {} }
+
+function renderComunitario(){
+  kill(charts.com); charts.com = null;
+  const muns = uniq(S.all.map(r => r.municipio));
+  if (!muns.length){ setBanner($('#comBanner'), 'sindatos', 'Sin datos', 'Todavía no hay registros.'); return; }
+  if (!C.mun || !muns.includes(C.mun)) C.mun = muns.includes('San Juan Ermita') ? 'San Juan Ermita' : muns[0];
+  C.mun = llenar($('#comMun'), muns, null, C.mun);
+  const coms = uniq(S.all.filter(r => r.municipio === C.mun).map(r => r.comunidad));
+  C.com = llenar($('#comCom'), coms, null, C.com);
+  $$('#comChips button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === C.per)));
+
+  const rg = rangoPeriodo(C.per);
+  const fl = { mun:C.mun, com:C.com, cas:'', inf:'', desde:rg.desde, hasta:rg.hasta };
+  const rows = filtrar(fl), pts = puntosDe({ mun:C.mun, com:C.com, cas:'', inf:'' }), g = estadoGrupo(pts);
+  $('#comTitulo').textContent = C.com;
+  $('#comEyebrow').textContent = `${C.mun} · Vista comunitaria`;
+
+  const [t, d] = mensajeComunidad(g);
+  setBanner($('#comBanner'), g.estado, t, d, g.estado === 'sindatos' ? null : baldeHTML(g));
+  $('#comNota').textContent = `Datos hasta el ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad.` : ''}`;
+
+  const inicioC = inicioLluvias({ mun:C.mun, com:C.com, cas:'', inf:'' });
+  const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
+  $('#comKpis').innerHTML =
+    `<div class="kpi"><b>${nf(r.total, 0)} mm</b><span>Lluvia total del período</span></div>
+     <div class="kpi"><b>${r.dl}</b><span>Días con lluvia</span></div>
+     <div class="kpi"><b>${g.ultima ? (g.dias === 0 ? 'Último día' : `Hace ${g.dias} ${plural(g.dias, 'día', 'días')}`) : 'Sin lluvia'}</b><span>Última lluvia${g.ultima ? ' (' + fmtC(g.ultima) + ')' : ''}</span></div>`;
+  $('#comRango').textContent = s.fechas.length ? `${fmt(s.fechas[0])} — ${fmt(s.fechas[s.fechas.length - 1])}` : 'Sin registros en este período';
+
+  let maxIdx = null, maxVal = 0;
+  s.mm.forEach((v, i) => { if (v !== null && v > maxVal){ maxVal = v; maxIdx = i; } });
+  const anot = s.fechas.length ? { maxIdx: maxVal > 0 ? maxIdx : null, maxVal, total: r.total, secaDesde: r.ult >= 0 && r.ult < s.fechas.length - 1 ? r.ult + 1 : null } : null;
+  if (s.fechas.length) charts.com = crearGrafica($('#comChart'), s, { anot });
+  $('#comTL').innerHTML = htmlTimeline(s);
+
+  const terr = `${C.com} · ${C.mun}`;
+  CTX.com = { territorio: terr, periodo: `${fmt(rg.desde)} - ${fmt(rg.hasta)}`, estado: g.estado, banner: { titulo: t, detalle: d },
+              lectura: lecturaPeriodo(s, r, g, C.com, pts, lluviaDia({ mun:C.mun, com:C.com, cas:'', inf:'' }, S.ref)), filas: filasRiesgo(pts, 'punto'), wa: textoWA(terr, g, pts) };
+}
+
+/* =========================== MUNICIPAL =========================== */
+/* Lectura en lenguaje sencillo: situación actual, lluvia más reciente y resumen del período */
+function lecturaPeriodo(s, r, g, nombre, pts, ay){
+  if (!s.fechas.length) return [{ titulo: 'Sin datos', texto: 'No hay registros para el filtro seleccionado.' }];
+  const items = [];
+  // 1. situación actual
+  let sit;
+  if (g.estado === 'sindatos') sit = `Todavía no hay suficientes reportes para estimar la humedad en los puntos de monitoreo de ${nombre}.`;
+  else if (g.k > 0){
+    const otros = g.ev - g.k;
+    sit = `${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} de monitoreo de ${nombre} ${plural(g.k, 'está', 'están')} en alerta o crítico por falta de lluvia: ${puntosAfectados(pts)}.` +
+          (otros > 0 ? ` ${plural(otros, 'El otro punto con datos no está', 'Los otros ' + otros + ' puntos con datos no están')} en alerta.` : '');
+  } else sit = `Ningún punto de monitoreo de ${nombre} está en alerta ni crítico por falta de lluvia.${g.estado === 'atencion' ? ' La humedad va bajando; conviene vigilar.' : ''}`;
+  if (g.n > g.ev) sit += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto no se cuenta', 'puntos no se cuentan')} por tener pocos reportes.`;
+  items.push({ titulo: `Situación al ${fmtL(S.ref)}`, texto: sit });
+  // 2. lluvia más reciente
+  let rec;
+  if (!ay || ay.mm == null) rec = `Ningún punto reportó el ${fmtL(S.ref)}, que es el último día con datos.`;
+  else {
+    rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia === 0 ? 'no llovió en ningún punto con reporte.' : `llovió en ${ay.conLluvia} de los ${ay.puntosReportaron} ${plural(ay.puntosReportaron, 'punto', 'puntos')} con reporte, con un promedio de ${nf(ay.mm, 1)} mm.`}`;
+    if (ay.conLluvia === 0 && g.ultima) rec += ` La última lluvia fue el ${fmtL(g.ultima)}, hace ${g.dias} ${plural(g.dias, 'día', 'días')}.`;
+  }
+  items.push({ titulo: 'Lluvia más reciente', texto: rec });
+  // 3. resumen del período
+  const multi = pts.length > 1;
+  const per = rangoL(s.fechas[0], s.fechas[s.fechas.length - 1]);
+  let res = `${per.charAt(0).toUpperCase() + per.slice(1)}, ` + (multi
+    ? `hubo lluvia en al menos un punto durante ${r.dl} ${plural(r.dl, 'día', 'días')}, y ningún punto con reporte registró lluvia durante ${r.ds} ${plural(r.ds, 'día', 'días')}.`
+    : `llovió ${r.dl} ${plural(r.dl, 'día', 'días')} y no llovió ${r.ds} ${plural(r.ds, 'día', 'días')}.`);
+  if (r.rachaMax > 0){
+    const desdeInicio = r.inicio && r.inicio > s.fechas[0] ? ` desde que empezaron las lluvias (${fmtL(r.inicio)})` : '';
+    res += ` El mayor tiempo seguido sin lluvia${desdeInicio} fue de ${r.rachaMax} ${plural(r.rachaMax, 'día', 'días')} (${rangoL(s.fechas[r.rachaIni], s.fechas[r.rachaFin])}).`;
+  }
+  items.push({ titulo: 'Resumen del período', texto: res });
+  return items;
+}
+
+function renderMunicipal(){
+  kill(charts.mun); charts.mun = null;
+  const A = S.all;
+  if (!A.length){ setBanner($('#munBanner'), 'sindatos', 'Sin datos', 'Todavía no hay registros.'); return; }
+  if (!F.desde) { const rg = rangoPeriodo('todo'); F.desde = rg.desde; F.hasta = rg.hasta; }
+  F.mun = llenar($('#fMun'), uniq(A.map(r => r.municipio)), 'Todos', F.mun);
+  F.com = llenar($('#fCom'), uniq(A.filter(r => !F.mun || r.municipio === F.mun).map(r => r.comunidad)), 'Todas', F.com);
+  F.cas = llenar($('#fCas'), uniq(A.filter(r => (!F.mun || r.municipio === F.mun) && (!F.com || r.comunidad === F.com)).map(r => r.caserio)), 'Todos', F.cas);
+  F.inf = llenar($('#fInf'), uniq(A.filter(r => (!F.mun || r.municipio === F.mun) && (!F.com || r.comunidad === F.com) && (!F.cas || r.caserio === F.cas)).map(r => r.responsable)), 'Todos', F.inf);
+  $('#fDesde').value = F.desde; $('#fHasta').value = F.hasta;
+
+  const rows = filtrar(F), pts = puntosDe(F), g = estadoGrupo(pts);
+  const terr = F.com ? `${F.com}${F.mun ? ' · ' + F.mun : ''}` : F.mun || 'Departamento de Chiquimula';
+  $('#munTitulo').textContent = terr;
+  $('#munBase').textContent = `Base activa: ${nf(A.length)} registros. Filtro actual: ${nf(rows.length)} registros.`;
+
+  // alerta del nivel que se está mirando
+  const pct = Math.round(g.pctAlerta);
+  const fechaCorta = fmtC(S.ref);
+  let tit, det;
+  if (g.estado === 'sindatos'){
+    tit = `Datos insuficientes al ${fechaCorta} para estimar la humedad`;
+    det = `Ningún punto de este filtro tiene suficientes reportes (${CFG.MIN_REPORTES_7D} en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días en la temporada).`;
+  } else {
+    tit = `${LABEL[g.estado]} al ${fechaCorta}: ${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} (${pct}%) en alerta o crítico por falta de lluvia`;
+    const afect = puntosAfectados(pts);
+    if (g.estado === 'alerta' || g.estado === 'critico')
+      det = `Supera el umbral de ${CFG.UMBRAL_GRUPO}% definido para dar seguimiento en campo. Puntos afectados: ${afect}.`;
+    else if (g.k > 0)
+      det = `${plural(g.k, 'Hay 1 punto', 'Hay ' + g.k + ' puntos')} que requiere${g.k === 1 ? '' : 'n'} seguimiento: ${afect}. El conjunto sigue por debajo del umbral de ${CFG.UMBRAL_GRUPO}%, pero conviene atender ${g.k === 1 ? 'ese punto' : 'esos puntos'}.`;
+    else if (g.estado === 'atencion')
+      det = 'La humedad estimada va bajando; conviene vigilar.';
+    else det = 'Ningún punto en alerta ni crítico.';
+    if (g.n > g.ev) det += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto sin datos suficientes no se cuenta', 'puntos sin datos suficientes no se cuentan')}.`;
+  }
+  setBanner($('#munBanner'), g.estado, tit, det);
+
+  const inicio = inicioLluvias(F);
+  const s = serieDiaria(rows), r = resumenSerie(s, rows, inicio);
+  const cobertura = pts.length ? Math.round(pts.reduce((a, p) => a + p.ult7, 0) / (7 * pts.length) * 100) : 0;
+  const nInf = new Set(rows.map(x => x.responsable).filter(Boolean)).size;
+  const ay = lluviaDia(F, S.ref);
+  const kpiAyer = ay.mm == null
+    ? `<div class="kpi"><b>Sin reportes</b><span>Lluvia del día anterior (${fmtC(S.ref)}): ningún punto de este filtro reportó</span></div>`
+    : `<div class="kpi"><b>${nf(ay.mm, 1)} mm</b><span>Promedio de lluvia del día anterior (${fmtC(S.ref)})<br>${ay.conLluvia} de ${ay.puntosReportaron} ${plural(ay.puntosReportaron, 'punto', 'puntos')} con reporte ${plural(ay.conLluvia, 'tuvo', 'tuvieron')} lluvia · máx. ${nf(ay.max, 1)} mm</span></div>`;
+  $('#munKpis').innerHTML = kpiAyer +
+    `<div class="kpi e-${g.estado}"><b>${g.k} de ${g.ev}</b><span>Puntos en alerta o crítico</span></div>
+     <div class="kpi"><b>${nf(r.total, 1)} mm</b><span>Precipitación promedio acumulada</span></div>
+     <div class="kpi"><b>${nInf}</b><span>Informantes identificados</span></div>
+     <div class="kpi"><b>${cobertura} %</b><span>Cobertura de monitoreo (reportes de los últimos 7 días)</span></div>`;
+  $('#munKpis2').innerHTML =
+    `<div class="kpi"><b>${nf(rows.length)}</b><span>Registros analizados</span></div>
+     <div class="kpi"><b>${r.dl}</b><span>Días con registro de lluvia (>0 mm)</span></div>
+     <div class="kpi"><b>${r.ds}</b><span>Días con registro sin lluvia (0 mm)</span></div>
+     <div class="kpi"><b>${nf(r.max, 1)} mm</b><span>Máximo diario registrado</span></div>
+     <div class="kpi"><b>${r.rachaMax} días</b><span>Mayor tiempo seguido sin lluvia${r.rachaMax ? `<br>${fmtC(s.fechas[r.rachaIni])} – ${fmtC(s.fechas[r.rachaFin])}` : ''}</span></div>
+     <div class="kpi"><b>${r.ultFecha ? fmt(r.ultFecha) : 'Sin lluvia'}</b><span>Última lluvia registrada${r.nUlt ? `<br>En ${r.posUlt} de ${r.nUlt} puntos con reporte` : ''}</span></div>`;
+
+  $('#munChartTitulo').textContent = F.com || F.cas ? 'Comportamiento diario' : 'Comportamiento promedio diario ' + (F.mun ? 'municipal' : 'departamental');
+  $('#munRango').textContent = s.fechas.length ? `${fmt(s.fechas[0])} — ${fmt(s.fechas[s.fechas.length - 1])}` : 'Sin registros para este filtro';
+  if (s.fechas.length) charts.mun = crearGrafica($('#munChart'), s, {});
+  const lectura = lecturaPeriodo(s, r, g, F.com || F.mun || 'Chiquimula', pts, ay);
+  $('#munLectura').innerHTML = lectura.map(i => `<p><b>${esc(i.titulo)}.</b> ${esc(i.texto)}</p>`).join('');
+
+  // municipios (solo cuando no se ha elegido uno)
+  $('#secTiles').hidden = !!F.mun;
+  if (!F.mun){
+    $('#tilesMun').innerHTML = filasMunicipios(pts).map(m =>
+      `<button type="button" class="tile e-${m.g.estado}" data-mun="${esc(m.mun)}"><b>${esc(m.mun)}</b>
+       <span>${m.g.ev ? `${m.g.k} de ${m.g.ev} ${plural(m.g.ev, 'punto', 'puntos')} en alerta o crítico` : `${m.g.n} ${plural(m.g.n, 'punto', 'puntos')} con pocos reportes`}</span>${chip(m.g.estado)}</button>`).join('');
+  }
+
+  // tabla por nivel de riesgo
+  const nivel = F.com || F.cas ? 'punto' : 'comunidad';
+  $('#riesgoTitulo').textContent = nivel === 'punto' ? `Puntos de monitoreo${F.com ? ' de ' + F.com : ''} por nivel de riesgo` : `Comunidades${F.mun ? ' de ' + F.mun : ''} por nivel de riesgo`;
+  const filas = filasRiesgo(pts, nivel);
+  $('#tablaRiesgo').innerHTML =
+    `<thead><tr><th>${nivel === 'punto' ? 'Caserío' : 'Comunidad'}</th><th>Día anterior</th><th>Acumulado</th><th>Sin lluvia</th><th>Humedad estimada</th><th>Puntos con datos</th><th>Estado</th></tr></thead><tbody>` +
+    filas.map((f, i) => `<tr tabindex="0" data-i="${i}" data-mun="${esc(f.mun)}" data-com="${esc(f.com)}" data-cas="${nivel === 'punto' ? esc(f.cas) : ''}" class="e-${f.g.estado}">
+      <td><b>${esc(f.nombre)}</b><div class="sub">${esc(f.sub)}</div></td>
+      <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
+      <td>${f.g.pctReserva == null ? '<span class="sub">Sin estimar</span>' : `<div class="barra"><span><i style="width:${Math.round(f.g.pctReserva)}%"></i></span>${Math.round(f.g.pctReserva)}%</div>`}</td>
+      <td>${f.g.ev} de ${f.g.n}</td><td>${chip(f.g.estado)}</td></tr>`).join('') + '</tbody>';
+
+  // acumulado por informante
+  $('#listaInf').innerHTML = acumPorInformante(rows).map((a, i) =>
+    `<li><span><b>${i + 1}. ${esc(a.nombre)}</b><small>${esc(a.lugar)}</small></span><b>${nf(a.sum, 1)} mm</b></li>`).join('') || '<li class="sub">Sin registros.</li>';
+
+  // tarjetas por punto
+  const rp = new Map();
+  rows.forEach(x => { const k = keyP(x); if (!rp.has(k)) rp.set(k, []); rp.get(k).push(x); });
+  cardsRows = rp;
+  cardsLista = pts.filter(p => rp.has(p.key)).sort(cmpRiesgo);
+  cardsN = 12;
+  pintarCards();
+
+  CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: g.estado, banner: { titulo: tit, detalle: det },
+              lectura, filas };
+}
+
+function pintarCards(){
+  charts.cards.forEach(kill); charts.cards = [];
+  const lista = cardsLista.slice(0, cardsN);
+  // si el filtro deja un solo punto, su gráfica sería igual a la de arriba: se omite para no repetirla
+  const unico = cardsLista.length === 1;
+  $('#puntos').innerHTML = lista.map(p => {
+    const rows = cardsRows.get(p.key), s = serieDiaria(rows), r = resumenSerie(s, rows);
+    return `<article class="card punto"><div class="ph"><div><h3>${esc(p.comunidad)} · ${esc(p.caserio || p.comunidad)}</h3>
+      <div class="sub"><b>${esc(p.responsable)}</b> · ${esc(p.municipio)}</div></div>${chip(p.estado)}</div>
+      <p class="stats">Período: <b>${fmt(s.fechas[0])} – ${fmt(s.fechas[s.fechas.length - 1])}</b> · Acumulado: <b>${nf(r.total, 0)} mm</b> · Días con lluvia: <b>${r.dl}</b> · Días sin lluvia: <b>${r.ds}</b> · Máx. diario: <b>${nf(r.max, 1)} mm</b></p>
+      ${unico ? '' : '<div class="chartbox sm"><canvas></canvas></div>'}
+      <h4>Línea de tiempo de lluvia</h4><div class="tl">${htmlTimeline(s)}</div></article>`;
+  }).join('') || '<p class="nota">No hay puntos con registros para este filtro.</p>';
+  $$('#puntos canvas').forEach((cv, i) => {
+    const rows = cardsRows.get(lista[i].key);
+    charts.cards.push(crearGrafica(cv, serieDiaria(rows), { maxTicks: 6 }));
+  });
+  const mas = cardsLista.length - cardsN;
+  $('#masPuntos').hidden = mas <= 0;
+  if (mas > 0) $('#masPuntos').textContent = `Mostrar más puntos (${Math.min(12, mas)} de ${mas} restantes)`;
+}
+
+/* =========================== EXPORTAR =========================== */
+function compartirWA(ctx){
+  if (!ctx) return;
+  window.open('https://wa.me/?text=' + encodeURIComponent(ctx.wa), '_blank', 'noopener');
+}
+function exportarExcel(){
+  if (typeof XLSX === 'undefined'){ alert('No se pudo cargar el generador de Excel. Revisa la conexión a internet.'); return; }
+  const rows = filtrar(F), pts = puntosDe(F);
+  const resumen = pts.slice().sort(cmpRiesgo).map(p => ({
+    'Municipio': p.municipio, 'Comunidad': p.comunidad, 'Caserío': p.caserio, 'Informante': p.responsable,
+    'Estado': LABEL[p.estado], 'Humedad estimada (%)': Math.round(p.pct), 'Días sin lluvia': p.diasSinLluvia ?? '',
+    'Última lluvia': p.ultimaLluvia || '', [`Lluvia del día anterior ${S.ref} (mm)`]: p.mmRef ?? '', 'Acumulado de la temporada (mm)': Math.round(p.acum * 10) / 10, 'Reportes en los últimos 7 días': p.ult7
+  }));
+  const datos = rows.map(r => ({ 'Municipio': r.municipio, 'Comunidad': r.comunidad, 'Caserío': r.caserio, 'Informante': r.responsable, 'Fecha': r.fecha, 'Lluvia (mm)': r.mm }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumen), 'Resumen por punto');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos), 'Registros');
+  XLSX.writeFile(wb, `pluviometria_${S.ref}.xlsx`);
+}
+function cargarLogo(src){
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+        c.getContext('2d').drawImage(im, 0, 0);
+        res({ data: c.toDataURL('image/png'), w: im.naturalWidth, h: im.naturalHeight });
+      } catch (e) { res(null); }
+    };
+    im.onerror = () => res(null);
+    setTimeout(() => res(null), 4000);
+    im.src = src;
+  });
+}
+async function exportarPDF(ctx){
+  if (!ctx) return;
+  if (!(window.jspdf && window.jspdf.jsPDF)){ alert('No se pudo cargar el generador de PDF. Revisa la conexión a internet.'); return; }
+  const doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
+  const M = 15, W = 180; let y = 32;
+  const colores = { normal:[39,80,10], atencion:[107,82,0], alerta:[138,61,7], critico:[121,31,31], sindatos:[95,94,90] };
+  const salto = h => { if (y + h > 282){ doc.addPage(); y = M + 4; } };
+  const txt = (t, size = 10, bold = false, col = [52,64,84], gap = 2) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(...col);
+    const ls = doc.splitTextToSize(String(t), W), h = ls.length * size * 0.4;
+    salto(h); doc.text(ls, M, y + size * 0.32); y += h + gap;
+  };
+  doc.setFillColor(15, 39, 66); doc.rect(0, 0, 210, 24, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Informe de pluviometría - Chiquimula', M, 14);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('SIAP · Sistema de Información y Análisis Pluviométrico', M, 20);
+  const logos = (await Promise.all(['crs-logo.png', 'maga.png'].map(cargarLogo))).filter(Boolean);
+  let xr = 210 - M;
+  for (const lg of logos.slice().reverse()){
+    const hl = 14, w = hl * lg.w / lg.h;
+    try { xr -= w; doc.addImage(lg.data, 'PNG', xr, 5, w, hl); xr -= 4; } catch (e) {}
+  }
+  txt(ctx.territorio, 14, true, [15,39,66], 1);
+  txt(`Período: ${ctx.periodo} · Datos hasta el ${fmt(S.ref)}`, 9.5, false, [102,112,133], 4);
+  txt(`${LABEL[ctx.estado]}: ${ctx.banner.titulo}`, 11.5, true, colores[ctx.estado] || [15,39,66], 1);
+  txt(ctx.banner.detalle, 10, false, [52,64,84], 4);
+  txt('Lectura del período', 11.5, true, [15,39,66], 1);
+  (Array.isArray(ctx.lectura) ? ctx.lectura : [{ titulo: '', texto: String(ctx.lectura) }]).forEach(it => {
+    if (it.titulo) txt(it.titulo, 10, true, [15,39,66], 0.5);
+    txt(it.texto, 10, false, [52,64,84], 3);
+  });
+  y += 2;
+  const filas = ctx.filas.slice(0, 60);
+  if (filas.length){
+    txt(ctx.filas[0].nivel === 'punto' ? 'Puntos de monitoreo por nivel de riesgo' : 'Comunidades por nivel de riesgo', 11.5, true, [15,39,66], 2);
+    const X = [M, M + 62, M + 92, M + 120, M + 148];
+    const cab = () => { salto(8); doc.setFillColor(234,242,248); doc.rect(M, y - 4.5, W, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(15,39,66);
+      ['Nombre', 'Estado', 'Humedad', 'Sin lluvia', 'Acumulado'].forEach((h, i) => doc.text(h, X[i] + 1, y)); y += 5.5; };
+    cab();
+    filas.forEach(f => {
+      if (y > 276){ doc.addPage(); y = M + 6; cab(); }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(30,41,59);
+      doc.text(String(f.nombre).slice(0, 34), X[0] + 1, y);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...(colores[f.g.estado] || [0,0,0]));
+      doc.text(LABEL[f.g.estado].slice(0, 16), X[1] + 1, y);
+      doc.setTextColor(52,64,84);
+      doc.text(f.g.pctReserva == null ? '-' : `${Math.round(f.g.pctReserva)} %`, X[2] + 1, y);
+      doc.text(f.sinLluvia == null ? '-' : `${f.sinLluvia} d`, X[3] + 1, y);
+      doc.text(`${nf(f.acum, 0)} mm`, X[4] + 1, y);
+      doc.setFontSize(7.5); doc.setTextColor(120,130,145); doc.text(String(f.sub).slice(0, 38), X[0] + 1, y + 3.4);
+      y += 8;
+    });
+    if (ctx.filas.length > 60) txt(`Se muestran 60 de ${ctx.filas.length} filas. El detalle completo está en el Excel.`, 8.5, false, [102,112,133], 3);
+  }
+  y += 4;
+  txt('Nota: la humedad del suelo es una estimación de riesgo calculada solo con la lluvia registrada (balance simple de lluvia y pérdida diaria). No es una medición directa; los parámetros deben validarse con personal agrónomo.', 8.5, false, [102,112,133], 0);
+  const slug = ctx.territorio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
+  doc.save(`informe_${slug}_${S.ref}.pdf`);
+}
+
+/* =========================== ARRANQUE =========================== */
+function pintarPie(){
+  let act = '';
+  if (S.meta.actualizado){
+    try { act = new Date(S.meta.actualizado).toLocaleString('es-GT', { timeZone:'America/Guatemala', dateStyle:'long', timeStyle:'short' }); } catch (e) { act = S.meta.actualizado; }
+  }
+  $('#pie').textContent = `${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
+  $('#metodo').textContent =
+    `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. ` +
+    `Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad. ` +
+    `Niveles: Normal desde ${CFG.CORTE_NORMAL}%, Atención desde ${CFG.CORTE_ATENCION}%, Alerta desde ${CFG.CORTE_ALERTA}% y Crítico por debajo (cerca del punto de marchitez permanente). ` +
+    `Un municipio o comunidad pasa a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos están en alerta o crítico. Los días sin reporte no se cuentan como secos: solo bajan la confianza. Un grupo nunca se muestra como Normal si tiene algún punto en alerta o crítico. ` +
+    `Es una estimación de riesgo, no una medición de la humedad real. Estos valores son supuestos iniciales y deben validarse con personal agrónomo.`;
+  $('#ribbonEjemplo').hidden = !S.meta.ejemplo;
+}
+
+async function cargarDatos(){
+  let payload = null, ejemplo = false;
+  try {
+    const r = await fetch('datos.json?v=' + Date.now(), { cache:'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    payload = await r.json();
+    if (!payload || !Array.isArray(payload.datos) || !payload.datos.length) throw new Error('sin datos');
+  } catch (e) { payload = generarEjemplo(); ejemplo = true; }
+  cargarPayload(payload, ejemplo);
+  pintarPie();
+}
+
+function init(){
+  $$('[data-ir]').forEach(b => b.addEventListener('click', () => ir(b.dataset.ir)));
+  window.addEventListener('popstate', () => mostrar(hashActual()));
+  cargarC();
+
+  $('#comMun').addEventListener('change', e => { C.mun = e.target.value; C.com = ''; guardarC(); renderComunitario(); });
+  $('#comCom').addEventListener('change', e => { C.com = e.target.value; guardarC(); renderComunitario(); });
+  $('#comChips').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b){ C.per = b.dataset.p; renderComunitario(); } });
+  $('#comWA').addEventListener('click', () => compartirWA(CTX.com));
+  $('#comPDF').addEventListener('click', () => exportarPDF(CTX.com));
+
+  $('#fMun').addEventListener('change', e => { F.mun = e.target.value; F.com = F.cas = F.inf = ''; renderMunicipal(); });
+  $('#fCom').addEventListener('change', e => { F.com = e.target.value; F.cas = F.inf = ''; renderMunicipal(); });
+  $('#fCas').addEventListener('change', e => { F.cas = e.target.value; F.inf = ''; renderMunicipal(); });
+  $('#fInf').addEventListener('change', e => { F.inf = e.target.value; renderMunicipal(); });
+  $('#fDesde').addEventListener('change', e => { F.desde = e.target.value; renderMunicipal(); });
+  $('#fHasta').addEventListener('change', e => { F.hasta = e.target.value; renderMunicipal(); });
+  $('#munPDF').addEventListener('click', () => exportarPDF(CTX.mun));
+  $('#munXLS').addEventListener('click', exportarExcel);
+  $('#masPuntos').addEventListener('click', () => { cardsN += 12; pintarCards(); });
+
+  $('#tilesMun').addEventListener('click', e => { const t = e.target.closest('[data-mun]'); if (t){ F.mun = t.dataset.mun; F.com = F.cas = F.inf = ''; renderMunicipal(); window.scrollTo(0, 0); } });
+  const abrirFila = tr => {
+    if (!tr) return;
+    F.mun = tr.dataset.mun; F.com = tr.dataset.com; F.cas = tr.dataset.cas || ''; F.inf = '';
+    renderMunicipal(); window.scrollTo(0, 0);
+  };
+  $('#tablaRiesgo').addEventListener('click', e => abrirFila(e.target.closest('tr[data-mun]')));
+  $('#tablaRiesgo').addEventListener('keydown', e => { if (e.key === 'Enter') abrirFila(e.target.closest('tr[data-mun]')); });
+}
+
+function refrescar(){
+  const n = hashActual();
+  if (n === 'inicio') renderInicio();
+  if (n === 'comunitario') renderComunitario();
+  if (n === 'municipal') renderMunicipal();
+}
+cargarDatos().then(() => {
+  init(); mostrar(hashActual());
+  setInterval(async () => {
+    if (location.protocol === 'file:') return;
+    const antes = S.ref;
+    await cargarDatos();
+    if (F.hasta === antes) F.hasta = S.ref;
+    refrescar();
+  }, 30 * 60 * 1000);
+});
+
+</script>
+</body>
+</html>
