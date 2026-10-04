@@ -366,6 +366,8 @@ const CFG = {
   MIN_HISTORIAL_DIAS: 20,// días de registro mínimos en la temporada para evaluar un punto
   GRUPO_ATENCION: 15,    // % de puntos en alerta o crítico para marcar "Atención" a un grupo
   UMBRAL_GRUPO: 30,      // % de puntos en alerta o crítico para marcar "Alerta" (activa seguimiento)
+  GRUPO_MIN_PUNTOS: 4,   // desde cuántos puntos se revisa si faltan datos en el grupo
+  COBERTURA_MIN_GRUPO: 0.7, // si menos de este % de los puntos tiene datos, un "Normal" no se puede afirmar
   GRUPO_CRITICO: 50,     // % para marcar "Crítico" (si además hay algún punto crítico)
   URL_VISOR: 'https://cesarchacon01.github.io/siap-pluviometria/'
 };
@@ -484,7 +486,7 @@ const cmpRiesgo = (a,b) => ORDEN[a.estado] - ORDEN[b.estado] || a.pct - b.pct;
 function estadoGrupo(pts){
   const n = pts.length;
   const ev = pts.filter(p => p.estado !== 'sindatos');
-  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', pctAlerta: 0, pctReserva: null, dias: null, ultima: null, estado: 'sindatos' };
+  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', parcial: false, pctAlerta: 0, pctReserva: null, dias: null, ultima: null, estado: 'sindatos' };
   const ds = pts.map(p => p.diasSinLluvia).filter(v => v != null);
   base.dias = ds.length ? Math.min(...ds) : null;
   base.ultima = pts.map(p => p.ultimaLluvia).filter(Boolean).sort().pop() || null;
@@ -503,8 +505,10 @@ function estadoGrupo(pts){
   else if (base.pctAlerta >= CFG.UMBRAL_GRUPO) base.estado = 'alerta';
   else if (base.pctAlerta >= CFG.GRUPO_ATENCION) base.estado = 'atencion';
   else base.estado = 'normal';
+  base.parcial = n >= CFG.GRUPO_MIN_PUNTOS && ev.length / n < CFG.COBERTURA_MIN_GRUPO;
   // un grupo no puede verse "Normal" si algún punto está en alerta o crítico
   if (base.estado === 'normal' && base.k > 0) base.estado = 'atencion';
+  if (base.parcial && base.estado === 'normal') base.motivo = `${n - ev.length} de ${n} puntos sin datos suficientes`;
   return base;
 }
 
@@ -514,6 +518,18 @@ function puntosAfectados(pts, max = 3){
   const nom = p => `${p.comunidad}${p.caserio && p.caserio !== p.comunidad ? ' · ' + p.caserio : ''} (${LABEL[p.estado].toLowerCase()}${p.diasSinLluvia != null ? ', ' + p.diasSinLluvia + ' ' + (p.diasSinLluvia === 1 ? 'día' : 'días') + ' sin lluvia' : ''})`;
   const txt = af.slice(0, max).map(nom).join('; ');
   return af.length > max ? `${txt}; y ${af.length - max} más` : txt;
+}
+
+/* Un grupo "Normal" al que le faltan datos en muchos puntos no se puede mostrar como Normal */
+const estadoVista = g => (g.estado === 'normal' && g.parcial) ? 'sindatos' : g.estado;
+
+/* Dónde faltan más datos: municipios (nivel departamento) o comunidades (dentro de un municipio) */
+function dondeFaltan(pts, porComunidad, max = 4){
+  const m = new Map();
+  for (const p of pts) if (p.estado === 'sindatos'){ const k = porComunidad ? p.comunidad : p.municipio; m.set(k, (m.get(k) || 0) + 1); }
+  const a = [...m.entries()].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], 'es'));
+  const t = a.slice(0, max).map(([k, n]) => `${k} (${n})`).join(', ');
+  return a.length > max ? `${t} y ${a.length - max} más` : t;
 }
 
 /* ---------- filtros ---------- */
@@ -858,7 +874,7 @@ function renderInicio(){
     $('#inicioSpark').innerHTML = '';
     return;
   }
-  const muns = filasMunicipios(pts);
+  const muns = filasMunicipios(pts), gDpto = estadoGrupo(pts);
   const repHoy = new Set(S.all.filter(r => r.fecha === S.ref).map(r => r.municipio)).size;
   const et = etiquetaUltimoDato();
   $('#inicioSub').textContent = `Último dato: ${et === fmt(S.ref) ? et : et + ' (' + fmt(S.ref) + ')'} · ${repHoy} de ${muns.length} ${plural(muns.length, 'municipio reportó', 'municipios reportaron')} ese día.`;
@@ -870,6 +886,9 @@ function renderInicio(){
       `${enAlerta.slice(0, 4).map(m => m.mun).join(', ')}${enAlerta.length > 4 ? ' y otros' : ''}. Entra al panel municipal para ver el detalle.`);
   } else if (muns.every(m => m.g.estado === 'sindatos')){
     setBanner($('#inicioAlerta'), 'sindatos', 'Datos insuficientes', 'Aún no hay suficientes reportes para estimar la humedad del suelo.');
+  } else if (gDpto.parcial){
+    setBanner($('#inicioAlerta'), 'sindatos', `Al ${fmtC(S.ref)}: sin alertas en los puntos con datos, pero faltan datos`,
+      `${gDpto.n - gDpto.ev} de ${gDpto.n} puntos no tienen datos suficientes, así que no se puede asegurar que todo esté normal. Dónde faltan más: ${dondeFaltan(pts, false)}.`);
   } else {
     setBanner($('#inicioAlerta'), 'normal', `Al ${fmtC(S.ref)}: sin alertas por falta de lluvia`, 'Ningún punto de monitoreo está en alerta ni crítico.');
   }
@@ -967,8 +986,10 @@ function lecturaPeriodo(s, r, g, nombre, pts, ay){
     const otros = g.ev - g.k;
     sit = `${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} de monitoreo de ${nombre} ${plural(g.k, 'está', 'están')} en alerta o crítico por falta de lluvia: ${puntosAfectados(pts)}.` +
           (otros > 0 ? ` ${plural(otros, 'El otro punto con datos no está', 'Los otros ' + otros + ' puntos con datos no están')} en alerta.` : '');
+  } else if (g.parcial && g.estado === 'normal'){
+    sit = `Entre los ${g.ev} puntos con datos de ${nombre} no hay ninguno en alerta ni crítico, pero ${g.n - g.ev} de ${g.n} puntos no tienen datos suficientes, así que no se puede asegurar que todo esté normal.`;
   } else sit = `Ningún punto de monitoreo de ${nombre} está en alerta ni crítico por falta de lluvia.${g.estado === 'atencion' ? ' La humedad va bajando; conviene vigilar.' : ''}`;
-  if (!uno && g.n > g.ev) sit += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto no se cuenta', 'puntos no se cuentan')} por tener pocos reportes.`;
+  if (!uno && g.n > g.ev && !(g.parcial && g.estado === 'normal')) sit += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto no se cuenta', 'puntos no se cuentan')} por tener pocos reportes.`;
   items.push({ titulo: `Situación al ${fmtL(S.ref)}`, texto: sit });
   // 2. lluvia más reciente
   let rec;
@@ -1011,10 +1032,16 @@ function renderMunicipal(){
   // alerta del nivel que se está mirando
   const pct = Math.round(g.pctAlerta);
   const fechaCorta = fmtC(S.ref);
+  const ev = estadoVista(g);                       // "sindatos" también cuando es Normal pero faltan datos en muchos puntos
+  const donde = F.com ? '' : dondeFaltan(pts, !!F.mun);
   let tit, det;
   if (g.estado === 'sindatos'){
     tit = `Datos insuficientes al ${fechaCorta} para estimar la humedad`;
     det = `${g.motivo ? g.motivo + '. ' : ''}Se necesitan ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: confirma con los observadores que envían su registro todos los días y revisa que la fecha de cada registro sea correcta.`;
+  } else if (ev === 'sindatos'){
+    const sd = g.n - g.ev;
+    tit = `Datos incompletos al ${fechaCorta}: ${sd} de ${g.n} puntos no tienen datos suficientes`;
+    det = `En los ${g.ev} puntos con datos no hay alertas ni puntos críticos, pero no se puede asegurar que todo esté normal: el ${Math.round(sd / g.n * 100)}% de los puntos no ha reportado lo suficiente.${donde ? ` Dónde faltan más datos: ${donde}.` : ''}`;
   } else {
     tit = `${LABEL[g.estado]} al ${fechaCorta}: ${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} (${pct}%) en alerta o crítico por falta de lluvia`;
     const afect = puntosAfectados(pts);
@@ -1025,9 +1052,9 @@ function renderMunicipal(){
     else if (g.estado === 'atencion')
       det = 'La humedad estimada va bajando; conviene vigilar.';
     else det = 'Ningún punto en alerta ni crítico.';
-    if (g.n > g.ev) det += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto sin datos suficientes no se cuenta', 'puntos sin datos suficientes no se cuentan')}.`;
+    if (g.n > g.ev) det += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto sin datos suficientes no se cuenta', 'puntos sin datos suficientes no se cuentan')}.${g.parcial && donde ? ` Dónde faltan más datos: ${donde}.` : ''}`;
   }
-  setBanner($('#munBanner'), g.estado, tit, det);
+  setBanner($('#munBanner'), ev, tit, det);
   const fut = S.futuros.filter(x => (!F.mun || x.municipio === F.mun) && (!F.com || x.comunidad === F.com));
   $('#munCalidad').hidden = !fut.length;
   if (fut.length)
@@ -1066,8 +1093,8 @@ function renderMunicipal(){
   $('#secTiles').hidden = !!F.mun;
   if (!F.mun){
     $('#tilesMun').innerHTML = filasMunicipios(pts).map(m =>
-      `<button type="button" class="tile e-${m.g.estado}" data-mun="${esc(m.mun)}"><b>${esc(m.mun)}</b>
-       <span>${m.g.ev ? `${m.g.k} de ${m.g.ev} ${plural(m.g.ev, 'punto', 'puntos')} en alerta o crítico` : `${m.g.n} ${plural(m.g.n, 'punto', 'puntos')} con pocos reportes`}</span>${chip(m.g.estado)}</button>`).join('');
+      `<button type="button" class="tile e-${estadoVista(m.g)}" data-mun="${esc(m.mun)}"><b>${esc(m.mun)}</b>
+       <span>${m.g.ev ? `${m.g.k} de ${m.g.ev} ${plural(m.g.ev, 'punto', 'puntos')} en alerta o crítico${m.g.n > m.g.ev ? ` · ${m.g.n - m.g.ev} sin datos` : ''}` : `${m.g.n} ${plural(m.g.n, 'punto', 'puntos')} con pocos reportes`}</span>${chip(estadoVista(m.g))}</button>`).join('');
   }
 
   // tabla por nivel de riesgo
@@ -1080,7 +1107,7 @@ function renderMunicipal(){
       <td><b>${esc(f.nombre)}</b><div class="sub">${esc(f.sub)}</div></td>
       <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
       <td>${f.g.pctReserva == null ? '<span class="sub">Sin estimar</span>' : `<div class="barra"><span><i style="width:${Math.round(f.g.pctReserva)}%"></i></span>${Math.round(f.g.pctReserva)}%</div>`}</td>
-      <td>${f.g.ev} de ${f.g.n}</td><td>${chip(f.g.estado)}${f.g.estado === 'sindatos' && f.g.motivo ? `<div class="sub">${esc(f.g.motivo)}</div>` : ''}</td></tr>`).join('') + '</tbody>';
+      <td>${f.g.ev} de ${f.g.n}</td><td>${chip(estadoVista(f.g))}${estadoVista(f.g) === 'sindatos' && f.g.motivo ? `<div class="sub">${esc(f.g.motivo)}</div>` : ''}</td></tr>`).join('') + '</tbody>';
 
   // acumulado por informante
   $('#listaInf').innerHTML = acumPorInformante(rows).map((a, i) =>
@@ -1094,8 +1121,8 @@ function renderMunicipal(){
   cardsN = 12;
   pintarCards();
 
-  CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: g.estado, banner: { titulo: tit, detalle: det },
-              lectura, filas, serie: s, accion: ACCION_INST[g.estado],
+  CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: ev, banner: { titulo: tit, detalle: det },
+              lectura, filas, serie: s, accion: ACCION_INST[ev],
               kpis: [
                 ay.mm == null ? { v: 'Sin reportes', t: `Lluvia del día anterior (${fmtC(S.ref)})` } : { v: `${nf(ay.mm, 1)} mm`, t: `Promedio de lluvia del día anterior (${fmtC(S.ref)})` },
                 { v: `${g.k} de ${g.ev}`, t: 'Puntos en alerta o crítico' },
