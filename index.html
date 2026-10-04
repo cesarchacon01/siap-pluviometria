@@ -55,7 +55,6 @@ h1,h2,h3,h4,p{margin:0}
 .btn:hover{filter:brightness(.96)}
 .btn.verde{background:var(--green2);color:#fff}
 .btn.ghost{background:rgba(255,255,255,.15);color:#fff}
-.btn.wa{background:#1f9d55;color:#fff}
 .btn.claro{background:#eaf2f8;color:var(--navy)}
 .btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,tr[tabindex]:focus-visible,.opcion:focus-visible,.tile:focus-visible{outline:3px solid #7fb5ff;outline-offset:2px}
 
@@ -183,7 +182,6 @@ footer p{margin-top:8px;max-width:80ch}
   <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01"/><path d="M11 12h1v4h1"/></symbol>
   <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 18a4.6 4.4 0 0 1 0-9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7"/><path d="M11 13v2m0 3v2m4-5v2m0 3v2"/></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 13h5v7H3zM9.5 4h5v16h-5zM16 9h5v11h-5z"/></symbol>
-  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z"/><path d="M9 10a.5.5 0 0 0 1 0v-1a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1"/></symbol>
 </svg>
 
 <div id="ribbonEjemplo" class="ribbon" hidden role="status">Estás viendo datos de ejemplo: no se pudo leer datos.json. No uses esta información para tomar decisiones.</div>
@@ -228,7 +226,6 @@ footer p{margin-top:8px;max-width:80ch}
     </div>
     <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
     <div class="hero-r">
-      <button class="btn wa" id="comWA" type="button"><svg class="i" aria-hidden="true"><use href="#i-wa"/></svg>Compartir por WhatsApp</button>
       <button class="btn verde" id="comPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Descargar PDF</button>
     </div></div>
   </header>
@@ -647,25 +644,6 @@ function acumPorInformante(rows){
   return [...m.values()].sort((a,b) => b.sum - a.sum);
 }
 
-/* ---------- mensaje para WhatsApp ---------- */
-function textoWA(territorio, g, pts, ayer){
-  const peor = pts.slice().sort(cmpRiesgo)[0];
-  const l = [];
-  if (g.estado === 'alerta' || g.estado === 'critico'){
-    l.push(`*ALERTA POR FALTA DE LLUVIA · ${territorio}*`);
-    l.push(`${g.k} de ${g.ev} puntos de monitoreo tienen la humedad del suelo baja.`);
-    if (peor && peor.diasSinLluvia != null)
-      l.push(`Más afectado: ${peor.comunidad}${peor.caserio && peor.caserio !== peor.comunidad ? ' · ' + peor.caserio : ''}, ${peor.diasSinLluvia} días sin lluvia.`);
-    l.push('Se recomienda dar seguimiento en campo.');
-  } else {
-    l.push(`*Resumen de lluvia · ${territorio}*`);
-    l.push(`Estado: ${LABEL[g.estado]}. ${g.k} de ${g.ev} puntos con datos están en alerta o crítico.`);
-  }
-  if (ayer && ayer.mm != null) l.push(`Lluvia promedio del día anterior (${fmtC(S.ref)}): ${ayer.mm.toFixed(1)} mm, en ${ayer.puntosReportaron} de ${ayer.puntosTotal} puntos.`);
-  l.push(`_Estimación según la lluvia registrada hasta el ${fmt(S.ref)}. Más detalle: ${CFG.URL_VISOR}_`);
-  return l.join('\n');
-}
-
 /* ---------- datos de ejemplo (solo si no se puede leer datos.json) ---------- */
 function generarEjemplo(){
   let seed = 20260510;
@@ -721,6 +699,21 @@ const C = { mun:'', com:'', cas:'', per:'todo' };                       // vista
 const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
 let cardsN = 12, cardsLista = [], cardsRows = new Map();
 
+/* Qué hacer según el estado (texto editable) */
+const ACCION = {
+  normal:   'No hace falta hacer nada especial. Sigue registrando la lluvia todos los días.',
+  atencion: 'Vigila la lluvia en los próximos días. Si no llueve pronto, la humedad de la tierra seguirá bajando.',
+  alerta:   'Avisa a tu líder comunitario y a la municipalidad para dar seguimiento a la zona.',
+  critico:  'Avisa hoy a tu líder comunitario y a la municipalidad: los cultivos están en riesgo por falta de agua.',
+  sindatos: 'Pide al observador que envíe su registro todos los días para poder estimar la humedad.'
+};
+const ACCION_INST = {
+  normal:   'Sin acciones por falta de lluvia en este momento. Mantener el monitoreo diario.',
+  atencion: 'Vigilar la evolución y revisar los puntos señalados en la tabla.',
+  alerta:   'Dar seguimiento en campo a los puntos afectados y coordinar con las comunidades.',
+  critico:  'Priorizar la visita y la atención de los puntos críticos y coordinar la respuesta con las instancias locales.',
+  sindatos: 'Verificar con los observadores que envían su registro diario y revisar las fechas en Kobo.'
+};
 const kill = c => { if (c) { try { c.destroy(); } catch (e) {} } };
 
 function llenar(sel, valores, todos, actual){
@@ -932,10 +925,12 @@ function renderComunitario(){
 
   const inicioC = inicioLluvias(base);
   const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
-  $('#comKpis').innerHTML =
-    `<div class="kpi"><b>${nf(r.total, 0)} mm</b><span>Lluvia total del período</span></div>
-     <div class="kpi"><b>${r.dl}</b><span>Días con lluvia</span></div>
-     <div class="kpi"><b>${g.ultima ? (g.dias === 0 ? 'Último día' : `Hace ${g.dias} ${plural(g.dias, 'día', 'días')}`) : 'Sin lluvia'}</b><span>Última lluvia${g.ultima ? ' (' + fmtC(g.ultima) + ')' : ''}</span></div>`;
+  const kpisCom = [
+    { v: `${nf(r.total, 0)} mm`, t: 'Lluvia total del período' },
+    { v: String(r.dl), t: 'Días con lluvia' },
+    { v: g.ultima ? (g.dias === 0 ? 'Último día' : `Hace ${g.dias} ${plural(g.dias, 'día', 'días')}`) : 'Sin lluvia', t: `Última lluvia${g.ultima ? ' (' + fmtC(g.ultima) + ')' : ''}` }
+  ];
+  $('#comKpis').innerHTML = kpisCom.map(k => `<div class="kpi"><b>${esc(k.v)}</b><span>${esc(k.t)}</span></div>`).join('');
   $('#comRango').textContent = s.fechas.length ? `${fmt(s.fechas[0])} — ${fmt(s.fechas[s.fechas.length - 1])}` : 'Sin registros en este período';
 
   let maxIdx = null, maxVal = 0;
@@ -946,38 +941,43 @@ function renderComunitario(){
 
   const terr = `${nombre} · ${C.mun}`;
   CTX.com = { territorio: terr, periodo: `${fmt(rg.desde)} - ${fmt(rg.hasta)}`, estado: g.estado, banner: { titulo: t, detalle: d },
-              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), wa: textoWA(terr, g, pts) };
+              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), kpis: kpisCom, serie: s, accion: ACCION[g.estado] };
 }
 
 /* =========================== MUNICIPAL =========================== */
 /* Lectura en lenguaje sencillo: situación actual, lluvia más reciente y resumen del período */
 function lecturaPeriodo(s, r, g, nombre, pts, ay){
   if (!s.fechas.length) return [{ titulo: 'Sin datos', texto: 'No hay registros para el filtro seleccionado.' }];
-  const items = [];
+  const items = [], uno = pts.length === 1;
   // 1. situación actual
   let sit;
-  if (g.estado === 'sindatos') sit = `Todavía no hay suficientes reportes para estimar la humedad en los puntos de monitoreo de ${nombre}.`;
-  else if (g.k > 0){
+  if (g.estado === 'sindatos') sit = `Todavía no hay suficientes reportes para estimar la humedad en ${uno ? 'el punto' : 'los puntos'} de monitoreo de ${nombre}.`;
+  else if (uno){
+    const p = pts[0];
+    sit = g.k > 0
+      ? `El punto de monitoreo de ${nombre} está en ${LABEL[p.estado].toLowerCase()} por falta de lluvia${p.diasSinLluvia != null ? `: lleva ${p.diasSinLluvia} ${plural(p.diasSinLluvia, 'día', 'días')} sin lluvia` : ''}.`
+      : `El punto de monitoreo de ${nombre} no está en alerta ni crítico por falta de lluvia.${g.estado === 'atencion' ? ' La humedad va bajando; conviene vigilar.' : ''}`;
+  } else if (g.k > 0){
     const otros = g.ev - g.k;
     sit = `${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} de monitoreo de ${nombre} ${plural(g.k, 'está', 'están')} en alerta o crítico por falta de lluvia: ${puntosAfectados(pts)}.` +
           (otros > 0 ? ` ${plural(otros, 'El otro punto con datos no está', 'Los otros ' + otros + ' puntos con datos no están')} en alerta.` : '');
   } else sit = `Ningún punto de monitoreo de ${nombre} está en alerta ni crítico por falta de lluvia.${g.estado === 'atencion' ? ' La humedad va bajando; conviene vigilar.' : ''}`;
-  if (g.n > g.ev) sit += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto no se cuenta', 'puntos no se cuentan')} por tener pocos reportes.`;
+  if (!uno && g.n > g.ev) sit += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto no se cuenta', 'puntos no se cuentan')} por tener pocos reportes.`;
   items.push({ titulo: `Situación al ${fmtL(S.ref)}`, texto: sit });
   // 2. lluvia más reciente
   let rec;
-  if (!ay || ay.mm == null) rec = `Ningún punto reportó el ${fmtL(S.ref)}, que es el último día con datos.`;
-  else {
-    rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia === 0 ? 'no llovió en ningún punto con reporte.' : `llovió en ${ay.conLluvia} de los ${ay.puntosReportaron} ${plural(ay.puntosReportaron, 'punto', 'puntos')} con reporte, con un promedio de ${nf(ay.mm, 1)} mm.`}`;
-    if (ay.conLluvia === 0 && g.ultima) rec += ` La última lluvia fue el ${fmtL(g.ultima)}, hace ${g.dias} ${plural(g.dias, 'día', 'días')}.`;
-  }
+  if (!ay || ay.mm == null) rec = uno ? `El punto de monitoreo no reportó el ${fmtL(S.ref)}, que es el último día con datos.` : `Ningún punto reportó el ${fmtL(S.ref)}, que es el último día con datos.`;
+  else if (ay.puntosReportaron === 1) rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia ? `llovió ${nf(ay.mm, 1)} mm` : 'no llovió'}.`;
+  else rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia === 0 ? 'no llovió en ningún punto con reporte.' : `llovió en ${ay.conLluvia} de los ${ay.puntosReportaron} puntos con reporte, con un promedio de ${nf(ay.mm, 1)} mm.`}`;
+  if (ay && ay.mm != null && ay.conLluvia === 0 && g.ultima) rec += ` La última lluvia fue el ${fmtL(g.ultima)}, hace ${g.dias} ${plural(g.dias, 'día', 'días')}.`;
   items.push({ titulo: 'Lluvia más reciente', texto: rec });
   // 3. resumen del período
-  const multi = pts.length > 1;
   const per = rangoL(s.fechas[0], s.fechas[s.fechas.length - 1]);
-  let res = `${per.charAt(0).toUpperCase() + per.slice(1)}, ` + (multi
+  const noRep = s.mm.filter(v => v === null).length;
+  let res = `${per.charAt(0).toUpperCase() + per.slice(1)}, ` + (!uno
     ? `hubo lluvia en al menos un punto durante ${r.dl} ${plural(r.dl, 'día', 'días')}, y ningún punto con reporte registró lluvia durante ${r.ds} ${plural(r.ds, 'día', 'días')}.`
     : `llovió ${r.dl} ${plural(r.dl, 'día', 'días')} y no llovió ${r.ds} ${plural(r.ds, 'día', 'días')}.`);
+  if (noRep > 0) res += ` Hubo ${noRep} ${plural(noRep, 'día', 'días')} sin reporte.`;
   if (r.rachaMax > 0){
     const desdeInicio = r.inicio && r.inicio > s.fechas[0] ? ` desde que empezaron las lluvias (${fmtL(r.inicio)})` : '';
     res += ` El mayor tiempo seguido sin lluvia${desdeInicio} fue de ${r.rachaMax} ${plural(r.rachaMax, 'día', 'días')} (${rangoL(s.fechas[r.rachaIni], s.fechas[r.rachaFin])}).`;
@@ -1089,7 +1089,13 @@ function renderMunicipal(){
   pintarCards();
 
   CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: g.estado, banner: { titulo: tit, detalle: det },
-              lectura, filas };
+              lectura, filas, serie: s, accion: ACCION_INST[g.estado],
+              kpis: [
+                ay.mm == null ? { v: 'Sin reportes', t: `Lluvia del día anterior (${fmtC(S.ref)})` } : { v: `${nf(ay.mm, 1)} mm`, t: `Promedio de lluvia del día anterior (${fmtC(S.ref)})` },
+                { v: `${g.k} de ${g.ev}`, t: 'Puntos en alerta o crítico' },
+                { v: `${nf(r.total, 1)} mm`, t: 'Precipitación promedio acumulada' },
+                { v: `${cobertura} %`, t: 'Cobertura de monitoreo (últimos 7 días)' }
+              ] };
 }
 
 function pintarCards(){
@@ -1115,10 +1121,6 @@ function pintarCards(){
 }
 
 /* =========================== EXPORTAR =========================== */
-function compartirWA(ctx){
-  if (!ctx) return;
-  window.open('https://wa.me/?text=' + encodeURIComponent(ctx.wa), '_blank', 'noopener');
-}
 function exportarExcel(){
   if (typeof XLSX === 'undefined'){ alert('No se pudo cargar el generador de Excel. Revisa la conexión a internet.'); return; }
   const rows = filtrar(F), pts = puntosDe(F);
@@ -1150,20 +1152,82 @@ function cargarLogo(src, blanco){
     im.src = src;
   });
 }
+/* ---------- PDF: texto guía por estado y colores ---------- */
+const PDF_COL = {
+  normal:   { fg:[39,80,10],  bg:[234,243,222], bd:[192,221,151] },
+  atencion: { fg:[107,82,0],  bg:[255,246,214], bd:[239,214,130] },
+  alerta:   { fg:[138,61,7],  bg:[253,235,217], bd:[242,185,138] },
+  critico:  { fg:[121,31,31], bg:[253,234,234], bd:[240,163,163] },
+  sindatos: { fg:[95,94,90],  bg:[241,239,232], bd:[201,198,187] }
+};
+const SIGNIFICADO = {
+  normal:   'La tierra tiene humedad suficiente.',
+  atencion: 'La humedad está bajando; conviene vigilar.',
+  alerta:   'La tierra se está secando; hay que dar seguimiento.',
+  critico:  'La humedad está en el límite; los cultivos están en riesgo.',
+  sindatos: 'Faltan reportes para poder estimar la humedad.'
+};
+const niceMax = v => { const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return ([1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(x => m <= x + 1e-9) || 10) * p; };
+
+/* La misma gráfica del visor (barras de lluvia diaria + línea de acumulado), dibujada con vectores */
+function dibujarGrafica(doc, s, x, y, w, h){
+  const n = s.fechas.length; if (!n) return;
+  const ml = 11, mr = 12, mt = 7, mb = 8;
+  const px = x + ml, pw = w - ml - mr, py = y + mt, ph = h - mt - mb;
+  const topMm = niceMax(Math.max(5, ...s.mm.filter(v => v !== null)));
+  const topAc = niceMax(Math.max(5, s.acum[n - 1]));
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5);
+  doc.setLineWidth(0.15);
+  for (let i = 0; i <= 4; i++){
+    const yy = py + ph - ph * i / 4;
+    doc.setDrawColor(228, 232, 236); doc.line(px, yy, px + pw, yy);
+    doc.setTextColor(102, 112, 133);
+    doc.text(String(Math.round(topMm * i / 4 * 10) / 10), px - 1.5, yy + 0.8, { align: 'right' });
+    doc.text(String(Math.round(topAc * i / 4)), px + pw + 1.5, yy + 0.8);
+  }
+  doc.setFontSize(7); doc.setTextColor(102, 112, 133);
+  doc.text('Lluvia diaria (mm)', px, py - 3);
+  doc.text('Acumulado (mm)', px + pw, py - 3, { align: 'right' });
+  const bw = Math.max(0.25, Math.min(1.6, pw / n * 0.7));
+  doc.setFillColor(20, 132, 92);
+  s.mm.forEach((v, i) => {
+    if (v === null || v <= 0) return;
+    const bh = ph * Math.min(v, topMm) / topMm;
+    doc.rect(px + pw * (i + 0.5) / n - bw / 2, py + ph - bh, bw, bh, 'F');
+  });
+  doc.setDrawColor(21, 101, 192); doc.setLineWidth(0.7);
+  let prev = null;
+  s.acum.forEach((v, i) => {
+    const pt = [px + pw * (i + 0.5) / n, py + ph - ph * v / topAc];
+    if (prev) doc.line(prev[0], prev[1], pt[0], pt[1]);
+    prev = pt;
+  });
+  doc.setFontSize(6.5); doc.setTextColor(102, 112, 133);
+  const marcas = Math.min(6, n);
+  for (let k = 0; k < marcas; k++){
+    const i = marcas === 1 ? 0 : Math.round(k * (n - 1) / (marcas - 1));
+    doc.text(fmtC(s.fechas[i]), px + pw * (i + 0.5) / n, py + ph + 4, { align: 'center' });
+  }
+}
+
 async function exportarPDF(ctx){
   if (!ctx) return;
   if (!(window.jspdf && window.jspdf.jsPDF)){ alert('No se pudo cargar el generador de PDF. Revisa la conexión a internet.'); return; }
-  const doc = new window.jspdf.jsPDF({ unit:'mm', format:'a4' });
+  const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
   const M = 15, W = 180; let y = 32;
-  const colores = { normal:[39,80,10], atencion:[107,82,0], alerta:[138,61,7], critico:[121,31,31], sindatos:[95,94,90] };
-  const salto = h => { if (y + h > 282){ doc.addPage(); y = M + 4; } };
+  const pc = PDF_COL[ctx.estado] || PDF_COL.sindatos;
+  const lh = (size, n) => n * size * 0.42;
+  const salto = h => { if (y + h > 280){ doc.addPage(); y = M + 2; } };
   const txt = (t, size = 10, bold = false, col = [52,64,84], gap = 2) => {
     doc.setFont('helvetica', bold ? 'bold' : 'normal'); doc.setFontSize(size); doc.setTextColor(...col);
-    const ls = doc.splitTextToSize(String(t), W), h = ls.length * size * 0.4;
+    const ls = doc.splitTextToSize(String(t), W), h = lh(size, ls.length);
     salto(h); doc.text(ls, M, y + size * 0.32); y += h + gap;
   };
+  const titulo = t => { salto(14); txt(t, 11.5, true, [15,39,66], 1.5); };
+
+  // encabezado con logos (el de CRS en blanco)
   doc.setFillColor(15, 39, 66); doc.rect(0, 0, 210, 24, 'F');
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Informe de pluviometría - Chiquimula', M, 14);
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Informe de lluvia - Chiquimula', M, 14);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('SIAP · Sistema de Información y Análisis Pluviométrico', M, 20);
   const logos = (await Promise.all(['crs-logo.png', 'maga.png'].map(f => cargarLogo(f, f === 'crs-logo.png')))).filter(Boolean);
   let xr = 210 - M;
@@ -1171,40 +1235,152 @@ async function exportarPDF(ctx){
     const hl = 14, w = hl * lg.w / lg.h;
     try { xr -= w; doc.addImage(lg.data, 'PNG', xr, 5, w, hl); xr -= 4; } catch (e) {}
   }
-  txt(ctx.territorio, 14, true, [15,39,66], 1);
+
+  txt(ctx.territorio, 16, true, [15,39,66], 1);
   txt(`Período: ${ctx.periodo} · Datos hasta el ${fmt(S.ref)}`, 9.5, false, [102,112,133], 4);
-  txt(`${LABEL[ctx.estado]}: ${ctx.banner.titulo}`, 11.5, true, colores[ctx.estado] || [15,39,66], 1);
-  txt(ctx.banner.detalle, 10, false, [52,64,84], 4);
-  txt('Lectura del período', 11.5, true, [15,39,66], 1);
+
+  // 1. estado, en una caja del color del semáforo
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+  const tl = doc.splitTextToSize(ctx.banner.titulo, W - 10);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  const dl = doc.splitTextToSize(ctx.banner.detalle, W - 10);
+  const bh = 6 + lh(13, tl.length) + 2 + lh(10, dl.length) + 4;
+  salto(bh + 4);
+  doc.setFillColor(...pc.bg); doc.setDrawColor(...pc.bd); doc.setLineWidth(0.4);
+  doc.roundedRect(M, y, W, bh, 2.5, 2.5, 'FD');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...pc.fg);
+  doc.text(tl, M + 5, y + 8);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.text(dl, M + 5, y + 8 + lh(13, tl.length) + 1.5);
+  y += bh + 5;
+
+  // 2. qué hacer
+  if (ctx.accion){ txt('Qué hacer', 11.5, true, pc.fg, 1); txt(ctx.accion, 10.5, false, [52,64,84], 5); }
+
+  // 3. números clave
+  if (ctx.kpis && ctx.kpis.length){
+    const n = ctx.kpis.length, gap = 4, kw = (W - gap * (n - 1)) / n, kh = 20;
+    salto(kh + 6);
+    ctx.kpis.forEach((k, i) => {
+      const kx = M + i * (kw + gap);
+      doc.setFillColor(255, 255, 255); doc.setDrawColor(216, 225, 232); doc.setLineWidth(0.3);
+      doc.roundedRect(kx, y, kw, kh, 2, 2, 'FD');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(15, 39, 66); doc.text(String(k.v), kx + 3, y + 7.5);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(102, 112, 133);
+      doc.text(doc.splitTextToSize(k.t, kw - 6), kx + 3, y + 12);
+    });
+    y += kh + 6;
+  }
+
+  // 4. gráfica (la misma del visor) con su explicación
+  if (ctx.serie && ctx.serie.fechas.length){
+    titulo('Lluvia diaria y acumulada');
+    txt(rangoL(ctx.serie.fechas[0], ctx.serie.fechas[ctx.serie.fechas.length - 1]).replace(/^./, c => c.toUpperCase()), 8.5, false, [102,112,133], 2);
+    salto(70);
+    dibujarGrafica(doc, ctx.serie, M, y, W, 58);
+    y += 60;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(52, 64, 84);
+    doc.setFillColor(20, 132, 92); doc.rect(M + 1, y - 2.4, 2.6, 2.6, 'F');
+    doc.text('Cada barra verde es la lluvia que cayó en un día.', M + 6, y);
+    doc.setFillColor(21, 101, 192); doc.rect(M + 94, y - 1.6, 6, 0.9, 'F');
+    doc.text('La línea azul suma toda la lluvia del período.', M + 103, y);
+    y += 8;
+  }
+
+  // 5. lectura en palabras
+  titulo('Lectura del período');
   (Array.isArray(ctx.lectura) ? ctx.lectura : [{ titulo: '', texto: String(ctx.lectura) }]).forEach(it => {
     if (it.titulo) txt(it.titulo, 10, true, [15,39,66], 0.5);
     txt(it.texto, 10, false, [52,64,84], 3);
   });
   y += 2;
+
+  // 6. línea de tiempo por mes
+  if (ctx.serie && ctx.serie.fechas.length){
+    salto(40);
+    titulo('Línea de tiempo de lluvia');
+    y += 3;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(102, 112, 133);
+    doc.setFillColor(20, 132, 92); doc.rect(M + 1, y - 2.2, 2.4, 2.4, 'F'); doc.text('Llovió', M + 5, y);
+    doc.setFillColor(205, 211, 218); doc.rect(M + 22, y - 2.2, 2.4, 2.4, 'F'); doc.text('No llovió', M + 26, y);
+    doc.setFillColor(238, 241, 244); doc.rect(M + 48, y - 2.2, 2.4, 2.4, 'F'); doc.text('Sin reporte', M + 52, y);
+    y += 6;
+    const meses = new Map();
+    ctx.serie.fechas.forEach((f, i) => { const k = f.slice(0, 7); if (!meses.has(k)) meses.set(k, []); meses.get(k).push(ctx.serie.mm[i]); });
+    const lista = [...meses.entries()];
+    for (let i = 0; i < lista.length; i += 2){
+      salto(9);
+      [lista[i], lista[i + 1]].forEach((it, col) => {
+        if (!it) return;
+        const [k, dias] = it, [yy, mm] = k.split('-'), x0 = M + col * 91;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(102, 112, 133);
+        doc.text(`${MESES_L[+mm - 1].charAt(0).toUpperCase() + MESES_L[+mm - 1].slice(1)} ${yy}`, x0, y + 3.2);
+        dias.forEach((v, j) => {
+          if (v === null) doc.setFillColor(238, 241, 244); else if (v > 0) doc.setFillColor(20, 132, 92); else doc.setFillColor(205, 211, 218);
+          doc.rect(x0 + 30 + j * 1.6, y, 1.1, 4.4, 'F');
+        });
+      });
+      y += 8;
+    }
+    y += 3;
+  }
+
+  // 7. tabla de comunidades o puntos
   const filas = ctx.filas.slice(0, 60);
   if (filas.length){
-    txt(ctx.filas[0].nivel === 'punto' ? 'Puntos de monitoreo por nivel de riesgo' : 'Comunidades por nivel de riesgo', 11.5, true, [15,39,66], 2);
-    const X = [M, M + 62, M + 92, M + 120, M + 148];
-    const cab = () => { salto(8); doc.setFillColor(234,242,248); doc.rect(M, y - 4.5, W, 7, 'F'); doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(15,39,66);
-      ['Nombre', 'Estado', 'Humedad', 'Sin lluvia', 'Acumulado'].forEach((h, i) => doc.text(h, X[i] + 1, y)); y += 5.5; };
+    titulo(filas[0].nivel === 'punto' ? 'Puntos de monitoreo (caseríos)' : 'Comunidades por nivel de riesgo');
+    txt('Ordenados de mayor a menor riesgo.', 8.5, false, [102,112,133], 2);
+    const X = [M, M + 62, M + 98, M + 124, M + 150];
+    const cab = () => {
+      salto(12);
+      doc.setFillColor(234, 242, 248); doc.rect(M, y, W, 7, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(15, 39, 66);
+      ['Nombre', 'Estado', 'Humedad (est.)', 'Sin lluvia', 'Acumulado'].forEach((h, i) => doc.text(h, X[i] + 1.5, y + 4.8));
+      y += 9;
+    };
     cab();
     filas.forEach(f => {
-      if (y > 276){ doc.addPage(); y = M + 6; cab(); }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(30,41,59);
-      doc.text(String(f.nombre).slice(0, 34), X[0] + 1, y);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...(colores[f.g.estado] || [0,0,0]));
-      doc.text(LABEL[f.g.estado].slice(0, 16), X[1] + 1, y);
-      doc.setTextColor(52,64,84);
-      doc.text(f.g.pctReserva == null ? '-' : `${Math.round(f.g.pctReserva)} %`, X[2] + 1, y);
-      doc.text(f.sinLluvia == null ? '-' : `${f.sinLluvia} d`, X[3] + 1, y);
-      doc.text(`${nf(f.acum, 0)} mm`, X[4] + 1, y);
-      doc.setFontSize(7.5); doc.setTextColor(120,130,145); doc.text(String(f.sub).slice(0, 38), X[0] + 1, y + 3.4);
-      y += 8;
+      if (y > 270){ doc.addPage(); y = M + 4; cab(); }
+      const c = PDF_COL[f.g.estado] || PDF_COL.sindatos;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(30, 41, 59);
+      doc.text(String(f.nombre).slice(0, 32), X[0] + 1.5, y + 2.5);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...c.fg);
+      doc.text(LABEL[f.g.estado].slice(0, 18), X[1] + 1.5, y + 2.5);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(52, 64, 84);
+      doc.text(f.g.pctReserva == null ? '-' : `${Math.round(f.g.pctReserva)} %`, X[2] + 1.5, y + 2.5);
+      doc.text(f.sinLluvia == null ? '-' : `${f.sinLluvia} ${f.sinLluvia === 1 ? 'día' : 'días'}`, X[3] + 1.5, y + 2.5);
+      doc.text(`${nf(f.acum, 0)} mm`, X[4] + 1.5, y + 2.5);
+      doc.setFontSize(7.5); doc.setTextColor(120, 130, 145);
+      doc.text(String(f.sub).slice(0, 38), X[0] + 1.5, y + 6.2);
+      if (f.g.estado === 'sindatos' && f.g.motivo) doc.text(String(f.g.motivo).slice(0, 34), X[1] + 1.5, y + 6.2);
+      doc.setDrawColor(232, 236, 240); doc.setLineWidth(0.2); doc.line(M, y + 8, M + W, y + 8);
+      y += 9.5;
     });
     if (ctx.filas.length > 60) txt(`Se muestran 60 de ${ctx.filas.length} filas. El detalle completo está en el Excel.`, 8.5, false, [102,112,133], 3);
+    y += 4;
   }
+
+  // 8. cómo entender los estados
+  salto(52);
+  titulo('Cómo entender los estados');
   y += 4;
-  txt('Nota: la humedad del suelo es una estimación de riesgo calculada solo con la lluvia registrada (balance simple de lluvia y pérdida diaria). No es una medición directa; los parámetros deben validarse con personal agrónomo.', 8.5, false, [102,112,133], 0);
+  Object.keys(SIGNIFICADO).forEach(k => {
+    const c = PDF_COL[k];
+    salto(7);
+    doc.setFillColor(...c.bg); doc.setDrawColor(...c.bd); doc.setLineWidth(0.3); doc.roundedRect(M, y - 3.4, 30, 5.4, 1.2, 1.2, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...c.fg); doc.text(LABEL[k], M + 2, y + 0.4);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(52, 64, 84); doc.text(SIGNIFICADO[k], M + 34, y + 0.4);
+    y += 7;
+  });
+  y += 3;
+  txt('Nota: la humedad del suelo es una estimación calculada solo con la lluvia registrada por los observadores (se suma la lluvia que cae y se resta lo que el suelo y las plantas pierden cada día). No es una medición directa y los valores deben validarse con personal agrónomo. El registro de las 7 am corresponde a la lluvia del día anterior.', 8.5, false, [102,112,133], 0);
+
+  // pie con numeración
+  const total = doc.getNumberOfPages();
+  for (let p = 1; p <= total; p++){
+    doc.setPage(p); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(140, 148, 160);
+    doc.text(`SIAP · Datos hasta el ${fmt(S.ref)} · Página ${p} de ${total}`, 105, 291, { align: 'center' });
+  }
   const slug = ctx.territorio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
   doc.save(`informe_${slug}_${S.ref}.pdf`);
 }
@@ -1247,7 +1423,6 @@ function init(){
   $('#comCom').addEventListener('change', e => { C.com = e.target.value; C.cas = ''; guardarC(); renderComunitario(); });
   $('#comCas').addEventListener('change', e => { C.cas = e.target.value; guardarC(); renderComunitario(); });
   $('#comChips').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b){ C.per = b.dataset.p; renderComunitario(); } });
-  $('#comWA').addEventListener('click', () => compartirWA(CTX.com));
   $('#comPDF').addEventListener('click', () => exportarPDF(CTX.com));
 
   $('#fMun').addEventListener('change', e => { F.mun = e.target.value; F.com = F.cas = F.inf = ''; renderMunicipal(); });
