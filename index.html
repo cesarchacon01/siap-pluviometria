@@ -472,7 +472,7 @@ function statsPunto(key, rows){
   return {
     key, municipio: ultima.municipio, comunidad: ultima.comunidad, caserio: ultima.caserio,
     responsable: rec[0] || '', informantes: rec.length ? rec : informantes,
-    estado, motivo, pct, reserva, diasAgota: Math.ceil(reserva / CFG.ET_DIA),
+    estado, motivo, pct, reserva,
     diasSinLluvia: ultimaLluvia ? diffDias(ultimaLluvia, S.ref) : null, ultimaLluvia,
     acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
   };
@@ -484,7 +484,7 @@ const cmpRiesgo = (a,b) => ORDEN[a.estado] - ORDEN[b.estado] || a.pct - b.pct;
 function estadoGrupo(pts){
   const n = pts.length;
   const ev = pts.filter(p => p.estado !== 'sindatos');
-  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', pctAlerta: 0, pctReserva: null, diasAgota: null, dias: null, ultima: null, estado: 'sindatos' };
+  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', pctAlerta: 0, pctReserva: null, dias: null, ultima: null, estado: 'sindatos' };
   const ds = pts.map(p => p.diasSinLluvia).filter(v => v != null);
   base.dias = ds.length ? Math.min(...ds) : null;
   base.ultima = pts.map(p => p.ultimaLluvia).filter(Boolean).sort().pop() || null;
@@ -498,7 +498,6 @@ function estadoGrupo(pts){
   base.diasAfectados = af.length ? Math.max(...af.map(p => p.diasSinLluvia ?? 0)) : null;
   base.pctAlerta = base.k / ev.length * 100;
   base.pctReserva = avg(ev.map(p => p.pct));
-  base.diasAgota = Math.round(avg(ev.map(p => p.diasAgota)));
   if (ev.length === 1) base.estado = ev[0].estado;
   else if (base.pctAlerta >= CFG.GRUPO_CRITICO && ev.some(p => p.estado === 'critico')) base.estado = 'critico';
   else if (base.pctAlerta >= CFG.UMBRAL_GRUPO) base.estado = 'alerta';
@@ -890,9 +889,9 @@ function renderInicio(){
 function mensajeComunidad(g){
   const dias = g.dias, ult = g.ultima;
   switch (g.estado){
-    case 'normal': return ['Todo en orden: la tierra tiene humedad', `La última lluvia fue ${cuando(ult)}.${g.diasAgota ? ` Si no llueve, la humedad alcanzaría para unos ${g.diasAgota} días.` : ''}`];
+    case 'normal': return ['Todo en orden: la tierra tiene humedad', `La última lluvia fue ${cuando(ult)}.`];
     case 'atencion': return [dias ? `Atención: ${dias} ${plural(dias, 'día', 'días')} sin lluvia` : 'Atención: la humedad va bajando', `Todavía hay humedad en la tierra, pero está bajando. La última lluvia fue ${cuando(ult)}. Si pasan más días sin llover, empezará a faltar agua.${g.k > 0 ? ` ${plural(g.k, 'Un punto de la comunidad está', g.k + ' puntos de la comunidad están')} en alerta o crítico.` : ''}`];
-    case 'alerta': return ['Alerta: la tierra se está secando', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Si no llueve pronto, la humedad podría llegar al límite en unos ${g.diasAgota ?? 'pocos'} días.`];
+    case 'alerta': return ['Alerta: la tierra se está secando', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Si no llueve pronto, la humedad seguirá bajando y podría afectar los cultivos.`];
     case 'critico': return ['Crítico: la tierra casi no tiene humedad', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Los cultivos podrían empezar a marchitarse si no llueve pronto.`];
     default: return ['Pocos datos para evaluar la humedad', `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: pide al observador que envíe su registro todos los días.`];
   }
@@ -1412,7 +1411,7 @@ function pintarPie(){
     `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. ` +
     `Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad. ` +
     `Niveles: Normal desde ${CFG.CORTE_NORMAL}%, Atención desde ${CFG.CORTE_ATENCION}%, Alerta desde ${CFG.CORTE_ALERTA}% y Crítico por debajo (cerca del punto de marchitez permanente). ` +
-    `Un municipio o comunidad pasa a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos están en alerta o crítico. Los días sin reporte no se cuentan como secos: solo bajan la confianza. Un grupo nunca se muestra como Normal si tiene algún punto en alerta o crítico. ` +
+    `Un municipio o comunidad pasa a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos están en alerta o crítico. Los días sin reporte no se cuentan como secos: solo bajan la confianza. No se calcula cuántos días más durará la humedad, porque eso depende de la temperatura, del tipo de suelo y del cultivo, datos que no se tienen. Un grupo nunca se muestra como Normal si tiene algún punto en alerta o crítico. ` +
     `Es una estimación de riesgo, no una medición de la humedad real. Estos valores son supuestos iniciales y deben validarse con personal agrónomo.`;
   $('#ribbonEjemplo').hidden = !S.meta.ejemplo;
 }
