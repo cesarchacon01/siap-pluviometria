@@ -702,17 +702,17 @@ let cardsN = 12, cardsLista = [], cardsRows = new Map();
 
 /* Qué hacer según el estado (texto editable) */
 const ACCION = {
-  normal:   'No hace falta hacer nada especial. Sigue registrando la lluvia todos los días.',
-  atencion: 'Vigila la lluvia en los próximos días. Si no llueve pronto, la humedad de la tierra seguirá bajando.',
-  alerta:   'Avisa a tu líder comunitario y a la municipalidad para dar seguimiento a la zona.',
-  critico:  'Avisa hoy a tu líder comunitario y a la municipalidad: los cultivos están en riesgo por falta de agua.',
-  sindatos: 'Pide al observador que envíe su registro todos los días para poder estimar la humedad.'
+  normal:   'Comparte esta información con el COCODE y la COLRED de tu comunidad para que llegue a todos los hogares.',
+  atencion: 'Comparte esta información con el COCODE y la COLRED para que las familias estén pendientes de la lluvia en los próximos días.',
+  alerta:   'Avisa hoy al COCODE y a la COLRED para que informen a los hogares y den seguimiento junto con la municipalidad.',
+  critico:  'Avisa de inmediato al COCODE y a la COLRED para que alerten a los hogares y reporten a la municipalidad: los cultivos están en riesgo por falta de agua.',
+  sindatos: 'Pide al observador que envíe su registro todos los días para poder estimar la humedad. Si el problema sigue, avisa al COCODE.'
 };
 const ACCION_INST = {
   normal:   'Sin acciones por falta de lluvia en este momento. Mantener el monitoreo diario.',
   atencion: 'Vigilar la evolución y revisar los puntos señalados en la tabla.',
-  alerta:   'Dar seguimiento en campo a los puntos afectados y coordinar con las comunidades.',
-  critico:  'Priorizar la visita y la atención de los puntos críticos y coordinar la respuesta con las instancias locales.',
+  alerta:   'Dar seguimiento en campo a los puntos afectados y coordinar con los COCODE y COLRED de las comunidades.',
+  critico:  'Priorizar la visita y la atención de los puntos críticos y coordinar la respuesta con los COCODE, las COLRED y las instancias locales.',
   sindatos: 'Verificar con los observadores que envían su registro diario y revisar las fechas en Kobo.'
 };
 const kill = c => { if (c) { try { c.destroy(); } catch (e) {} } };
@@ -947,7 +947,7 @@ function renderComunitario(){
 
   const terr = `${nombre} · ${C.mun}`;
   CTX.com = { territorio: terr, periodo: `${fmt(rg.desde)} - ${fmt(rg.hasta)}`, estado: g.estado, banner: { titulo: t, detalle: d },
-              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), kpis: kpisCom, serie: s, accion: ACCION[g.estado] };
+              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), kpis: kpisCom, serie: s, accion: ACCION[g.estado], vaso: g.pctReserva };
 }
 
 /* =========================== MUNICIPAL =========================== */
@@ -1160,11 +1160,11 @@ function cargarLogo(src, blanco){
 }
 /* ---------- PDF: texto guía por estado y colores ---------- */
 const PDF_COL = {
-  normal:   { fg:[39,80,10],  bg:[234,243,222], bd:[192,221,151] },
-  atencion: { fg:[107,82,0],  bg:[255,246,214], bd:[239,214,130] },
-  alerta:   { fg:[138,61,7],  bg:[253,235,217], bd:[242,185,138] },
-  critico:  { fg:[121,31,31], bg:[253,234,234], bd:[240,163,163] },
-  sindatos: { fg:[95,94,90],  bg:[241,239,232], bd:[201,198,187] }
+  normal:   { fg:[39,80,10],  bg:[234,243,222], bd:[192,221,151], sol:[59,109,17] },
+  atencion: { fg:[107,82,0],  bg:[255,246,214], bd:[239,214,130], sol:[181,137,0] },
+  alerta:   { fg:[138,61,7],  bg:[253,235,217], bd:[242,185,138], sol:[217,102,15] },
+  critico:  { fg:[121,31,31], bg:[253,234,234], bd:[240,163,163], sol:[163,45,45] },
+  sindatos: { fg:[95,94,90],  bg:[241,239,232], bd:[201,198,187], sol:[136,135,128] }
 };
 const SIGNIFICADO = {
   normal:   'La tierra tiene humedad suficiente.',
@@ -1216,6 +1216,22 @@ function dibujarGrafica(doc, s, x, y, w, h){
   }
 }
 
+/* Vaso de humedad (el mismo del visor): contorno abierto arriba y agua según el nivel */
+function dibujarVaso(doc, x, y, w, h, pct, color){
+  const r = 3.2, lw = 0.9;
+  const nivel = Math.max(0.05, Math.min(1, pct / 100));
+  const ix = x + lw / 2, iw = w - lw, base = y + h - lw / 2;
+  const wh = Math.max(1.4, (h - lw) * nivel), top = base - wh;
+  doc.setFillColor(...color);
+  if (wh > 2 * r){
+    doc.rect(ix, top, iw, wh - r, 'F');
+    doc.roundedRect(ix, base - 2 * r, iw, 2 * r, r - 0.5, r - 0.5, 'F');
+  } else doc.roundedRect(ix, top, iw, wh, Math.min(r - 0.5, wh / 2), Math.min(r - 0.5, wh / 2), 'F');
+  doc.setDrawColor(102, 112, 133); doc.setLineWidth(lw);
+  const c = 0.55 * r;
+  doc.lines([[0, h - r], [0, c, r - c, r, r, r], [w - 2 * r, 0], [c, 0, r, r - c, r, -r], [0, -(h - r)]], x, y, [1, 1], 'S', false);
+}
+
 async function exportarPDF(ctx){
   if (!ctx) return;
   if (!(window.jspdf && window.jspdf.jsPDF)){ alert('No se pudo cargar el generador de PDF. Revisa la conexión a internet.'); return; }
@@ -1253,19 +1269,27 @@ async function exportarPDF(ctx){
   txt(`Período del informe: ${ctx.periodo}`, 9.5, false, [102,112,133], 0.5);
   txt(`Informe generado el ${fmt(hoy)}. Último día con registros: ${fmt(S.ref)} (el registro de las 7 am es de la lluvia del día anterior).`, 9, false, [102,112,133], 4);
 
-  // 1. estado, en una caja del color del semáforo
+  // 1. estado, en una caja del color del semáforo (con el vaso de humedad en la vista comunitaria)
+  const vaso = ctx.vaso != null && ctx.estado !== 'sindatos';
+  const tw = W - 10 - (vaso ? 19 : 0), tx = M + 5 + (vaso ? 19 : 0);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
-  const tl = doc.splitTextToSize(ctx.banner.titulo, W - 10);
+  const tl = doc.splitTextToSize(ctx.banner.titulo, tw);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  const dl = doc.splitTextToSize(ctx.banner.detalle, W - 10);
-  const bh = 6 + lh(13, tl.length) + 2 + lh(10, dl.length) + 4;
+  const dl = doc.splitTextToSize(ctx.banner.detalle, tw);
+  const bloque = 6 + lh(13, tl.length) + 2 + lh(10, dl.length) + 4;
+  const bh = vaso ? Math.max(bloque, 33) : bloque, off = (bh - bloque) / 2;
   salto(bh + 4);
   doc.setFillColor(...pc.bg); doc.setDrawColor(...pc.bd); doc.setLineWidth(0.4);
   doc.roundedRect(M, y, W, bh, 2.5, 2.5, 'FD');
+  if (vaso){
+    dibujarVaso(doc, M + 6, y + 4, 12, 21, ctx.vaso, pc.sol);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...pc.fg);
+    doc.text('Humedad', M + 12, y + 29.5, { align: 'center' });
+  }
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...pc.fg);
-  doc.text(tl, M + 5, y + 8);
+  doc.text(tl, tx, y + 8 + off);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  doc.text(dl, M + 5, y + 8 + lh(13, tl.length) + 1.5);
+  doc.text(dl, tx, y + 8 + off + lh(13, tl.length) + 1.5);
   y += bh + 5;
 
   // 2. qué hacer
