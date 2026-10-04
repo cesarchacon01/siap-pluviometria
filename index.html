@@ -78,6 +78,7 @@ h1,h2,h3,h4,p{margin:0}
 .sel.c{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 @media (min-width:1000px){.sel.m7{grid-template-columns:1.2fr 1.5fr 1.5fr 1.2fr 1.3fr 1fr 1fr}}
 .fld select{text-overflow:ellipsis}
+.fld select:disabled{background:#f4f6f8;color:#344054;opacity:1;cursor:default}
 .chips button{font-family:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;min-height:40px}
 .chips button[aria-pressed="true"]{background:#eaf2f8;color:var(--navy);border-color:#9fc3e0}
 
@@ -233,7 +234,8 @@ footer p{margin-top:8px;max-width:80ch}
     <div class="card sel c">
       <div class="fld"><label for="comMun">Municipio</label><select id="comMun"></select></div>
       <div class="fld"><label for="comCom">Mi comunidad</label><select id="comCom"></select></div>
-      <div class="fld" id="comCasW" hidden><label for="comCas">Caserío</label><select id="comCas"></select></div>
+      <div class="fld"><label for="comCas">Caserío</label><select id="comCas"></select></div>
+      <div class="fld"><label for="comInf">Informante</label><select id="comInf"></select></div>
       <div class="fld per"><label id="lblPer">Período de la gráfica</label>
         <div class="chips" id="comChips" role="group" aria-labelledby="lblPer">
           <button type="button" data-p="todo" aria-pressed="true">Toda la temporada</button>
@@ -695,7 +697,7 @@ const plural = (n, a, b) => n === 1 ? a : b;
 
 const charts = { com:null, mun:null, cards:[] };
 const CTX = { com:null, mun:null };
-const C = { mun:'', com:'', cas:'', per:'todo' };                       // vista comunitaria
+const C = { mun:'', com:'', cas:'', inf:'', per:'todo' };                       // vista comunitaria
 const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
 let cardsN = 12, cardsLista = [], cardsRows = new Map();
 
@@ -895,8 +897,8 @@ function mensajeComunidad(g){
     default: return ['Pocos datos para evaluar la humedad', `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: pide al observador que envíe su registro todos los días.`];
   }
 }
-function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com, cas:C.cas })); } catch (e) {} }
-function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; C.cas = v.cas || ''; } } catch (e) {} }
+function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com, cas:C.cas, inf:C.inf })); } catch (e) {} }
+function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; C.cas = v.cas || ''; C.inf = v.inf || ''; } } catch (e) {} }
 
 function renderComunitario(){
   kill(charts.com); charts.com = null;
@@ -906,13 +908,18 @@ function renderComunitario(){
   C.mun = llenar($('#comMun'), muns, null, C.mun);
   const coms = uniq(S.all.filter(r => r.municipio === C.mun).map(r => r.comunidad));
   C.com = llenar($('#comCom'), coms, null, C.com);
+  // caserío e informante: siempre visibles; si solo hay una opción se muestra fija (en gris) para saber de cuál se trata
+  const selCas = $('#comCas'), selInf = $('#comInf');
   const cass = uniq(S.all.filter(r => r.municipio === C.mun && r.comunidad === C.com).map(r => r.caserio));
-  $('#comCasW').hidden = cass.length < 2;           // el selector solo aparece si la comunidad tiene varios caseríos
-  C.cas = cass.length > 1 ? llenar($('#comCas'), cass, 'Todos los caseríos', C.cas) : '';
+  if (cass.length > 1){ C.cas = llenar(selCas, cass, 'Todos los caseríos', C.cas); selCas.disabled = false; }
+  else { C.cas = ''; llenar(selCas, cass.length ? cass : ['Sin caserío'], null, cass[0] || ''); selCas.disabled = true; }
+  const infs = uniq(S.all.filter(r => r.municipio === C.mun && r.comunidad === C.com && (!C.cas || r.caserio === C.cas)).map(r => r.responsable));
+  if (infs.length > 1){ C.inf = llenar(selInf, infs, 'Todos los informantes', C.inf); selInf.disabled = false; }
+  else { C.inf = ''; llenar(selInf, infs.length ? infs : ['Sin informante'], null, infs[0] || ''); selInf.disabled = true; }
   $$('#comChips button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === C.per)));
 
   const rg = rangoPeriodo(C.per);
-  const base = { mun:C.mun, com:C.com, cas:C.cas, inf:'' };
+  const base = { mun:C.mun, com:C.com, cas:C.cas, inf:C.inf };
   const fl = { ...base, desde:rg.desde, hasta:rg.hasta };
   const rows = filtrar(fl), pts = puntosDe(base), g = estadoGrupo(pts);
   const nombre = C.cas ? `${C.com} · ${C.cas}` : C.com;
@@ -921,7 +928,7 @@ function renderComunitario(){
 
   const [t, d] = mensajeComunidad(g);
   setBanner($('#comBanner'), g.estado, t, d, g.estado === 'sindatos' ? null : baldeHTML(g));
-  $('#comNota').textContent = `Datos hasta el ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}`;
+  $('#comNota').textContent = `Último día con datos: ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}${C.inf ? ` Gráfica y números con los registros de ${C.inf}; el estado de humedad es del punto de monitoreo.` : ''}`;
 
   const inicioC = inicioLluvias(base);
   const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
@@ -1236,8 +1243,16 @@ async function exportarPDF(ctx){
     try { xr -= w; doc.addImage(lg.data, 'PNG', xr, 5, w, hl); xr -= 4; } catch (e) {}
   }
 
+  const hoy = hoyGT() || toS(Date.now());
+  if (S.meta.ejemplo){
+    doc.setFillColor(255, 243, 205); doc.rect(0, 24, 210, 8, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(92, 68, 0);
+    doc.text('DATOS DE EJEMPLO: no se pudo leer datos.json. No usar este informe para tomar decisiones.', 105, 29.2, { align: 'center' });
+    y = 38;
+  }
   txt(ctx.territorio, 16, true, [15,39,66], 1);
-  txt(`Período: ${ctx.periodo} · Datos hasta el ${fmt(S.ref)}`, 9.5, false, [102,112,133], 4);
+  txt(`Período del informe: ${ctx.periodo}`, 9.5, false, [102,112,133], 0.5);
+  txt(`Informe generado el ${fmt(hoy)}. Último día con registros: ${fmt(S.ref)} (el registro de las 7 am es de la lluvia del día anterior).`, 9, false, [102,112,133], 4);
 
   // 1. estado, en una caja del color del semáforo
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
@@ -1379,7 +1394,7 @@ async function exportarPDF(ctx){
   const total = doc.getNumberOfPages();
   for (let p = 1; p <= total; p++){
     doc.setPage(p); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(140, 148, 160);
-    doc.text(`SIAP · Datos hasta el ${fmt(S.ref)} · Página ${p} de ${total}`, 105, 291, { align: 'center' });
+    doc.text(`SIAP · Generado el ${fmt(hoy)} · Último día con datos: ${fmt(S.ref)} · Página ${p} de ${total}${S.meta.ejemplo ? ' · DATOS DE EJEMPLO' : ''}`, 105, 291, { align: 'center' });
   }
   const slug = ctx.territorio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
   doc.save(`informe_${slug}_${S.ref}.pdf`);
@@ -1419,9 +1434,10 @@ function init(){
   window.addEventListener('popstate', () => mostrar(hashActual()));
   cargarC();
 
-  $('#comMun').addEventListener('change', e => { C.mun = e.target.value; C.com = ''; C.cas = ''; guardarC(); renderComunitario(); });
-  $('#comCom').addEventListener('change', e => { C.com = e.target.value; C.cas = ''; guardarC(); renderComunitario(); });
-  $('#comCas').addEventListener('change', e => { C.cas = e.target.value; guardarC(); renderComunitario(); });
+  $('#comMun').addEventListener('change', e => { C.mun = e.target.value; C.com = C.cas = C.inf = ''; guardarC(); renderComunitario(); });
+  $('#comCom').addEventListener('change', e => { C.com = e.target.value; C.cas = C.inf = ''; guardarC(); renderComunitario(); });
+  $('#comCas').addEventListener('change', e => { C.cas = e.target.value; C.inf = ''; guardarC(); renderComunitario(); });
+  $('#comInf').addEventListener('change', e => { C.inf = e.target.value; guardarC(); renderComunitario(); });
   $('#comChips').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b){ C.per = b.dataset.p; renderComunitario(); } });
   $('#comPDF').addEventListener('click', () => exportarPDF(CTX.com));
 
