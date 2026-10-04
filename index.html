@@ -47,6 +47,7 @@ h1,h2,h3,h4,p{margin:0}
 .logos img{height:46px;width:auto;background:rgba(255,255,255,.0)}
 .hero-d{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .logos.sm img{height:36px}
+.logos img.blanco{filter:brightness(0) invert(1)}
 .hero-centro{display:block;padding:26px 26px 24px}
 .hero-centro .logos{justify-content:flex-start;margin-bottom:14px}
 
@@ -75,6 +76,9 @@ h1,h2,h3,h4,p{margin:0}
 .fld .fijo{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#eaf2f8;font-weight:700;font-size:14px;min-height:40px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .fld.per{grid-column:1/-1}
+.sel.c{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+@media (min-width:1000px){.sel.m7{grid-template-columns:1.2fr 1.5fr 1.5fr 1.2fr 1.3fr 1fr 1fr}}
+.fld select{text-overflow:ellipsis}
 .chips button{font-family:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;min-height:40px}
 .chips button[aria-pressed="true"]{background:#eaf2f8;color:var(--navy);border-color:#9fc3e0}
 
@@ -189,7 +193,7 @@ footer p{margin-top:8px;max-width:80ch}
 <!-- ============ INICIO ============ -->
 <section id="pantallaInicio" class="pantalla" aria-labelledby="tInicio">
   <header class="hero hero-centro">
-    <div class="logos"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="logos"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
     <div class="eyebrow">Chiquimula · Monitoreo comunitario de lluvia</div>
     <h1 id="tInicio">Generador Analítico de Pluviometría</h1>
     <p id="inicioSub"></p>
@@ -222,16 +226,17 @@ footer p{margin-top:8px;max-width:80ch}
       <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
       <div><div class="eyebrow" id="comEyebrow">Vista comunitaria</div><h1 id="comTitulo">Mi comunidad</h1></div>
     </div>
-    <div class="hero-d"><div class="logos sm"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
     <div class="hero-r">
       <button class="btn wa" id="comWA" type="button"><svg class="i" aria-hidden="true"><use href="#i-wa"/></svg>Compartir por WhatsApp</button>
       <button class="btn verde" id="comPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Descargar PDF</button>
     </div></div>
   </header>
   <div class="stack">
-    <div class="card sel">
+    <div class="card sel c">
       <div class="fld"><label for="comMun">Municipio</label><select id="comMun"></select></div>
       <div class="fld"><label for="comCom">Mi comunidad</label><select id="comCom"></select></div>
+      <div class="fld" id="comCasW" hidden><label for="comCas">Caserío</label><select id="comCas"></select></div>
       <div class="fld per"><label id="lblPer">Período de la gráfica</label>
         <div class="chips" id="comChips" role="group" aria-labelledby="lblPer">
           <button type="button" data-p="todo" aria-pressed="true">Toda la temporada</button>
@@ -267,7 +272,7 @@ footer p{margin-top:8px;max-width:80ch}
       <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
       <div><div class="eyebrow">Vista municipal y departamental</div><h1 id="munTitulo">Chiquimula</h1></div>
     </div>
-    <div class="hero-d"><div class="logos sm"><img src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
     <div class="hero-r">
       <button class="btn" id="munXLS" type="button"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Descargar Excel</button>
       <button class="btn verde" id="munPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Generar informe PDF</button>
@@ -275,7 +280,7 @@ footer p{margin-top:8px;max-width:80ch}
   </header>
   <div class="stack">
     <div class="card">
-      <div class="sel">
+      <div class="sel m7">
         <div class="fld"><label>Departamento</label><div class="fijo">Chiquimula</div></div>
         <div class="fld"><label for="fMun">Municipio</label><select id="fMun"></select></div>
         <div class="fld"><label for="fCom">Comunidad</label><select id="fCom"></select></div>
@@ -288,6 +293,7 @@ footer p{margin-top:8px;max-width:80ch}
     </div>
 
     <div id="munBanner" class="banner" role="status"></div>
+    <div id="munCalidad" class="banner" role="status" hidden></div>
 
     <div class="kpis" id="munKpis"></div>
     <details class="mas"><summary>Ver más indicadores del período</summary><div class="kpis" id="munKpis2"></div></details>
@@ -389,7 +395,7 @@ const uniq = a => [...new Set(a.filter(Boolean))].sort((x,y) => x.localeCompare(
 const avg = a => a.length ? a.reduce((s,v) => s+v, 0) / a.length : 0;
 
 /* ---------- estado global de datos ---------- */
-const S = { all:[], ref:'', refYear:0, puntos:new Map(), meta:{ actualizado:'', ejemplo:false } };
+const S = { all:[], futuros:[], limite:'', ref:'', refYear:0, puntos:new Map(), meta:{ actualizado:'', ejemplo:false } };
 const keyP = r => `${r.municipio}|${r.comunidad}|${r.caserio}`;
 
 function normalizar(arr){
@@ -403,8 +409,19 @@ function normalizar(arr){
   })).filter(r => /^\d{4}-\d{2}-\d{2}$/.test(r.fecha) && r.municipio && r.comunidad);
 }
 
+/* Fecha (AAAA-MM-DD) en Guatemala de un instante ISO */
+function fechaGT(iso){
+  try { return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Guatemala' }); } catch (e) { return ''; }
+}
+
 function cargarPayload(p, ejemplo){
-  S.all = normalizar(p.datos);
+  // Un registro no puede ser posterior al momento en que se generó datos.json. Si lo es, la fecha está mal
+  // escrita en Kobo: se separa para no mover la fecha de referencia ni dejar a todos los puntos "sin reportes".
+  const limite = (p.actualizado_utc && fechaGT(p.actualizado_utc)) || fechaGT(new Date().toISOString());
+  const todos = normalizar(p.datos);
+  S.limite = limite;
+  S.futuros = limite ? todos.filter(r => r.fecha > limite) : [];
+  S.all = limite ? todos.filter(r => r.fecha <= limite) : todos;
   S.meta = { actualizado: p.actualizado_utc || '', ejemplo: !!ejemplo };
   S.ref = S.all.reduce((m,r) => r.fecha > m ? r.fecha : m, '0000-00-00');
   S.refYear = +S.ref.slice(0,4);
@@ -438,6 +455,9 @@ function statsPunto(key, rows){
   const ult7 = temp.filter(f => { const d = diffDias(f, S.ref); return d >= 0 && d <= 6; }).length;
   const historia = temp.length;
   const pct = reserva / CFG.RESERVA_MAX * 100;
+  let motivo = '';
+  if (ult7 < CFG.MIN_REPORTES_7D) motivo = `Solo ${ult7} de los últimos 7 días con reporte`;
+  else if (historia < CFG.MIN_HISTORIAL_DIAS) motivo = `Solo ${historia} días de registro en la temporada`;
   let estado;
   if (ult7 < CFG.MIN_REPORTES_7D || historia < CFG.MIN_HISTORIAL_DIAS) estado = 'sindatos';
   else if (pct >= CFG.CORTE_NORMAL) estado = 'normal';
@@ -453,7 +473,7 @@ function statsPunto(key, rows){
   return {
     key, municipio: ultima.municipio, comunidad: ultima.comunidad, caserio: ultima.caserio,
     responsable: rec[0] || '', informantes: rec.length ? rec : informantes,
-    estado, pct, reserva, diasAgota: Math.ceil(reserva / CFG.ET_DIA),
+    estado, motivo, pct, reserva, diasAgota: Math.ceil(reserva / CFG.ET_DIA),
     diasSinLluvia: ultimaLluvia ? diffDias(ultimaLluvia, S.ref) : null, ultimaLluvia,
     acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
   };
@@ -465,11 +485,14 @@ const cmpRiesgo = (a,b) => ORDEN[a.estado] - ORDEN[b.estado] || a.pct - b.pct;
 function estadoGrupo(pts){
   const n = pts.length;
   const ev = pts.filter(p => p.estado !== 'sindatos');
-  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, pctAlerta: 0, pctReserva: null, diasAgota: null, dias: null, ultima: null, estado: 'sindatos' };
+  const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', pctAlerta: 0, pctReserva: null, diasAgota: null, dias: null, ultima: null, estado: 'sindatos' };
   const ds = pts.map(p => p.diasSinLluvia).filter(v => v != null);
   base.dias = ds.length ? Math.min(...ds) : null;
   base.ultima = pts.map(p => p.ultimaLluvia).filter(Boolean).sort().pop() || null;
-  if (!ev.length) return base;
+  if (!ev.length){
+    base.motivo = n === 1 ? pts[0].motivo : (pts.some(p => p.ult7 < CFG.MIN_REPORTES_7D) ? 'Pocos reportes en los últimos 7 días' : 'Poco historial de registro');
+    return base;
+  }
   base.k = ev.filter(p => p.estado === 'alerta' || p.estado === 'critico').length;
   base.nCritico = ev.filter(p => p.estado === 'critico').length;
   const af = ev.filter(p => p.estado === 'alerta' || p.estado === 'critico');
@@ -678,7 +701,7 @@ function generarEjemplo(){
       datos.push({ municipio: mun, comunidad: com, caserio: cas, responsable: inf, fecha: toS(ini + d * DAY), mm });
     }
   });
-  return { actualizado_utc: new Date().toISOString(), total_registros: datos.length, datos };
+  return { actualizado_utc: '2026-09-11T14:00:00Z', total_registros: datos.length, datos };
 }
 /* =====================================================================
    INTERFAZ
@@ -694,7 +717,7 @@ const plural = (n, a, b) => n === 1 ? a : b;
 
 const charts = { com:null, mun:null, cards:[] };
 const CTX = { com:null, mun:null };
-const C = { mun:'', com:'', per:'todo' };                       // vista comunitaria
+const C = { mun:'', com:'', cas:'', per:'todo' };                       // vista comunitaria
 const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
 let cardsN = 12, cardsLista = [], cardsRows = new Map();
 
@@ -876,11 +899,11 @@ function mensajeComunidad(g){
     case 'atencion': return [dias ? `Atención: ${dias} ${plural(dias, 'día', 'días')} sin lluvia` : 'Atención: la humedad va bajando', `Todavía hay humedad en la tierra, pero está bajando. La última lluvia fue ${cuando(ult)}. Si pasan más días sin llover, empezará a faltar agua.${g.k > 0 ? ` ${plural(g.k, 'Un punto de la comunidad está', g.k + ' puntos de la comunidad están')} en alerta o crítico.` : ''}`];
     case 'alerta': return ['Alerta: la tierra se está secando', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Si no llueve pronto, la humedad podría llegar al límite en unos ${g.diasAgota ?? 'pocos'} días.`];
     case 'critico': return ['Crítico: la tierra casi no tiene humedad', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Los cultivos podrían empezar a marchitarse si no llueve pronto.`];
-    default: return ['Pocos datos para evaluar la humedad', `Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada.`];
+    default: return ['Pocos datos para evaluar la humedad', `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: pide al observador que envíe su registro todos los días.`];
   }
 }
-function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com })); } catch (e) {} }
-function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; } } catch (e) {} }
+function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com, cas:C.cas })); } catch (e) {} }
+function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; C.cas = v.cas || ''; } } catch (e) {} }
 
 function renderComunitario(){
   kill(charts.com); charts.com = null;
@@ -890,19 +913,24 @@ function renderComunitario(){
   C.mun = llenar($('#comMun'), muns, null, C.mun);
   const coms = uniq(S.all.filter(r => r.municipio === C.mun).map(r => r.comunidad));
   C.com = llenar($('#comCom'), coms, null, C.com);
+  const cass = uniq(S.all.filter(r => r.municipio === C.mun && r.comunidad === C.com).map(r => r.caserio));
+  $('#comCasW').hidden = cass.length < 2;           // el selector solo aparece si la comunidad tiene varios caseríos
+  C.cas = cass.length > 1 ? llenar($('#comCas'), cass, 'Todos los caseríos', C.cas) : '';
   $$('#comChips button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === C.per)));
 
   const rg = rangoPeriodo(C.per);
-  const fl = { mun:C.mun, com:C.com, cas:'', inf:'', desde:rg.desde, hasta:rg.hasta };
-  const rows = filtrar(fl), pts = puntosDe({ mun:C.mun, com:C.com, cas:'', inf:'' }), g = estadoGrupo(pts);
-  $('#comTitulo').textContent = C.com;
+  const base = { mun:C.mun, com:C.com, cas:C.cas, inf:'' };
+  const fl = { ...base, desde:rg.desde, hasta:rg.hasta };
+  const rows = filtrar(fl), pts = puntosDe(base), g = estadoGrupo(pts);
+  const nombre = C.cas ? `${C.com} · ${C.cas}` : C.com;
+  $('#comTitulo').textContent = nombre;
   $('#comEyebrow').textContent = `${C.mun} · Vista comunitaria`;
 
   const [t, d] = mensajeComunidad(g);
   setBanner($('#comBanner'), g.estado, t, d, g.estado === 'sindatos' ? null : baldeHTML(g));
-  $('#comNota').textContent = `Datos hasta el ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad.` : ''}`;
+  $('#comNota').textContent = `Datos hasta el ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}`;
 
-  const inicioC = inicioLluvias({ mun:C.mun, com:C.com, cas:'', inf:'' });
+  const inicioC = inicioLluvias(base);
   const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
   $('#comKpis').innerHTML =
     `<div class="kpi"><b>${nf(r.total, 0)} mm</b><span>Lluvia total del período</span></div>
@@ -916,9 +944,9 @@ function renderComunitario(){
   if (s.fechas.length) charts.com = crearGrafica($('#comChart'), s, { anot });
   $('#comTL').innerHTML = htmlTimeline(s);
 
-  const terr = `${C.com} · ${C.mun}`;
+  const terr = `${nombre} · ${C.mun}`;
   CTX.com = { territorio: terr, periodo: `${fmt(rg.desde)} - ${fmt(rg.hasta)}`, estado: g.estado, banner: { titulo: t, detalle: d },
-              lectura: lecturaPeriodo(s, r, g, C.com, pts, lluviaDia({ mun:C.mun, com:C.com, cas:'', inf:'' }, S.ref)), filas: filasRiesgo(pts, 'punto'), wa: textoWA(terr, g, pts) };
+              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), wa: textoWA(terr, g, pts) };
 }
 
 /* =========================== MUNICIPAL =========================== */
@@ -980,7 +1008,7 @@ function renderMunicipal(){
   let tit, det;
   if (g.estado === 'sindatos'){
     tit = `Datos insuficientes al ${fechaCorta} para estimar la humedad`;
-    det = `Ningún punto de este filtro tiene suficientes reportes (${CFG.MIN_REPORTES_7D} en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días en la temporada).`;
+    det = `${g.motivo ? g.motivo + '. ' : ''}Se necesitan ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: confirma con los observadores que envían su registro todos los días y revisa que la fecha de cada registro sea correcta.`;
   } else {
     tit = `${LABEL[g.estado]} al ${fechaCorta}: ${g.k} de ${g.ev} ${plural(g.ev, 'punto', 'puntos')} (${pct}%) en alerta o crítico por falta de lluvia`;
     const afect = puntosAfectados(pts);
@@ -994,6 +1022,12 @@ function renderMunicipal(){
     if (g.n > g.ev) det += ` ${g.n - g.ev} ${plural(g.n - g.ev, 'punto sin datos suficientes no se cuenta', 'puntos sin datos suficientes no se cuentan')}.`;
   }
   setBanner($('#munBanner'), g.estado, tit, det);
+  const fut = S.futuros.filter(x => (!F.mun || x.municipio === F.mun) && (!F.com || x.comunidad === F.com));
+  $('#munCalidad').hidden = !fut.length;
+  if (fut.length)
+    setBanner($('#munCalidad'), 'atencion',
+      `Revisar fechas: ${fut.length} ${plural(fut.length, 'registro tiene', 'registros tienen')} una fecha posterior a la última actualización`,
+      `${fut.slice(0, 5).map(x => `${x.comunidad} · ${x.responsable} (${fmtC(x.fecha)}, ${nf(x.mm, 1)} mm)`).join('; ')}${fut.length > 5 ? `; y ${fut.length - 5} más` : ''}. No se usan en los cálculos. Corrige la fecha en Kobo.`);
 
   const inicio = inicioLluvias(F);
   const s = serieDiaria(rows), r = resumenSerie(s, rows, inicio);
@@ -1040,7 +1074,7 @@ function renderMunicipal(){
       <td><b>${esc(f.nombre)}</b><div class="sub">${esc(f.sub)}</div></td>
       <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
       <td>${f.g.pctReserva == null ? '<span class="sub">Sin estimar</span>' : `<div class="barra"><span><i style="width:${Math.round(f.g.pctReserva)}%"></i></span>${Math.round(f.g.pctReserva)}%</div>`}</td>
-      <td>${f.g.ev} de ${f.g.n}</td><td>${chip(f.g.estado)}</td></tr>`).join('') + '</tbody>';
+      <td>${f.g.ev} de ${f.g.n}</td><td>${chip(f.g.estado)}${f.g.estado === 'sindatos' && f.g.motivo ? `<div class="sub">${esc(f.g.motivo)}</div>` : ''}</td></tr>`).join('') + '</tbody>';
 
   // acumulado por informante
   $('#listaInf').innerHTML = acumPorInformante(rows).map((a, i) =>
@@ -1066,7 +1100,7 @@ function pintarCards(){
   $('#puntos').innerHTML = lista.map(p => {
     const rows = cardsRows.get(p.key), s = serieDiaria(rows), r = resumenSerie(s, rows);
     return `<article class="card punto"><div class="ph"><div><h3>${esc(p.comunidad)} · ${esc(p.caserio || p.comunidad)}</h3>
-      <div class="sub"><b>${esc(p.responsable)}</b> · ${esc(p.municipio)}</div></div>${chip(p.estado)}</div>
+      <div class="sub"><b>${esc(p.responsable)}</b> · ${esc(p.municipio)}</div></div><div style="text-align:right">${chip(p.estado)}${p.estado === 'sindatos' && p.motivo ? `<div class="sub">${esc(p.motivo)}</div>` : ''}</div></div>
       <p class="stats">Período: <b>${fmt(s.fechas[0])} – ${fmt(s.fechas[s.fechas.length - 1])}</b> · Acumulado: <b>${nf(r.total, 0)} mm</b> · Días con lluvia: <b>${r.dl}</b> · Días sin lluvia: <b>${r.ds}</b> · Máx. diario: <b>${nf(r.max, 1)} mm</b></p>
       ${unico ? '' : '<div class="chartbox sm"><canvas></canvas></div>'}
       <h4>Línea de tiempo de lluvia</h4><div class="tl">${htmlTimeline(s)}</div></article>`;
@@ -1099,13 +1133,15 @@ function exportarExcel(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos), 'Registros');
   XLSX.writeFile(wb, `pluviometria_${S.ref}.xlsx`);
 }
-function cargarLogo(src){
+function cargarLogo(src, blanco){
   return new Promise(res => {
     const im = new Image();
     im.onload = () => {
       try {
         const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
-        c.getContext('2d').drawImage(im, 0, 0);
+        const cx = c.getContext('2d');
+        cx.drawImage(im, 0, 0);
+        if (blanco){ cx.globalCompositeOperation = 'source-in'; cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, c.width, c.height); }
         res({ data: c.toDataURL('image/png'), w: im.naturalWidth, h: im.naturalHeight });
       } catch (e) { res(null); }
     };
@@ -1129,7 +1165,7 @@ async function exportarPDF(ctx){
   doc.setFillColor(15, 39, 66); doc.rect(0, 0, 210, 24, 'F');
   doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Informe de pluviometría - Chiquimula', M, 14);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('SIAP · Sistema de Información y Análisis Pluviométrico', M, 20);
-  const logos = (await Promise.all(['crs-logo.png', 'maga.png'].map(cargarLogo))).filter(Boolean);
+  const logos = (await Promise.all(['crs-logo.png', 'maga.png'].map(f => cargarLogo(f, f === 'crs-logo.png')))).filter(Boolean);
   let xr = 210 - M;
   for (const lg of logos.slice().reverse()){
     const hl = 14, w = hl * lg.w / lg.h;
@@ -1179,7 +1215,8 @@ function pintarPie(){
   if (S.meta.actualizado){
     try { act = new Date(S.meta.actualizado).toLocaleString('es-GT', { timeZone:'America/Guatemala', dateStyle:'long', timeStyle:'short' }); } catch (e) { act = S.meta.actualizado; }
   }
-  $('#pie').textContent = `${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
+  const nfut = S.futuros.length;
+  $('#pie').textContent = `${nfut ? `Se ignoraron ${nfut} ${plural(nfut, 'registro con fecha futura', 'registros con fecha futura')} (revisa la fecha en Kobo). ` : ''}${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
   $('#metodo').textContent =
     `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. ` +
     `Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad. ` +
@@ -1206,8 +1243,9 @@ function init(){
   window.addEventListener('popstate', () => mostrar(hashActual()));
   cargarC();
 
-  $('#comMun').addEventListener('change', e => { C.mun = e.target.value; C.com = ''; guardarC(); renderComunitario(); });
-  $('#comCom').addEventListener('change', e => { C.com = e.target.value; guardarC(); renderComunitario(); });
+  $('#comMun').addEventListener('change', e => { C.mun = e.target.value; C.com = ''; C.cas = ''; guardarC(); renderComunitario(); });
+  $('#comCom').addEventListener('change', e => { C.com = e.target.value; C.cas = ''; guardarC(); renderComunitario(); });
+  $('#comCas').addEventListener('change', e => { C.cas = e.target.value; guardarC(); renderComunitario(); });
   $('#comChips').addEventListener('click', e => { const b = e.target.closest('button[data-p]'); if (b){ C.per = b.dataset.p; renderComunitario(); } });
   $('#comWA').addEventListener('click', () => compartirWA(CTX.com));
   $('#comPDF').addEventListener('click', () => exportarPDF(CTX.com));
