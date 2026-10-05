@@ -238,7 +238,7 @@ footer p{margin-top:8px;max-width:80ch}
       <div class="fld"><label for="comInf">Informante</label><select id="comInf"></select></div>
       <div class="fld per"><label id="lblPer">Período de la gráfica</label>
         <div class="chips" id="comChips" role="group" aria-labelledby="lblPer">
-          <button type="button" data-p="todo" aria-pressed="true">Toda la temporada</button>
+          <button type="button" data-p="todo" aria-pressed="true">Todo el registro</button>
           <button type="button" data-p="30" aria-pressed="false">Últimos 30 días</button>
           <button type="button" data-p="mes" aria-pressed="false">Este mes</button>
         </div>
@@ -366,6 +366,7 @@ const CFG = {
   MIN_HISTORIAL_DIAS: 20,// días de registro mínimos en la temporada para evaluar un punto
   GRUPO_ATENCION: 15,    // % de puntos en alerta o crítico para marcar "Atención" a un grupo
   UMBRAL_GRUPO: 30,      // % de puntos en alerta o crítico para marcar "Alerta" (activa seguimiento)
+  GRUPO_MIN_EVALUADOS: 3,// un municipio o departamento no pasa de "Atención" si menos de estos puntos tienen datos
   GRUPO_MIN_PUNTOS: 4,   // desde cuántos puntos se revisa si faltan datos en el grupo
   COBERTURA_MIN_GRUPO: 0.7, // si menos de este % de los puntos tiene datos, un "Normal" no se puede afirmar
   GRUPO_CRITICO: 50,     // % para marcar "Crítico" (si además hay algún punto crítico)
@@ -476,14 +477,14 @@ function statsPunto(key, rows){
     responsable: rec[0] || '', informantes: rec.length ? rec : informantes,
     estado, motivo, pct, reserva,
     diasSinLluvia: ultimaLluvia ? diffDias(ultimaLluvia, S.ref) : null, ultimaLluvia,
-    acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
+    desde: temp[0] || fechas[0], acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
   };
 }
 
 const cmpRiesgo = (a,b) => ORDEN[a.estado] - ORDEN[b.estado] || a.pct - b.pct;
 
 /* Estado de un grupo de puntos (comunidad, municipio, departamento) */
-function estadoGrupo(pts){
+function estadoGrupo(pts, minEv = 1){
   const n = pts.length;
   const ev = pts.filter(p => p.estado !== 'sindatos');
   const base = { n, ev: ev.length, k: 0, nCritico: 0, diasAfectados: null, motivo: '', parcial: false, pctAlerta: 0, pctReserva: null, dias: null, ultima: null, estado: 'sindatos' };
@@ -500,7 +501,8 @@ function estadoGrupo(pts){
   base.diasAfectados = af.length ? Math.max(...af.map(p => p.diasSinLluvia ?? 0)) : null;
   base.pctAlerta = base.k / ev.length * 100;
   base.pctReserva = avg(ev.map(p => p.pct));
-  if (ev.length === 1) base.estado = ev[0].estado;
+  if (ev.length === 1) base.estado = (ev.length < minEv && base.k > 0) ? 'atencion' : ev[0].estado;
+  else if (ev.length < minEv) base.estado = base.k > 0 ? 'atencion' : 'normal';   // pocos puntos con datos: no se escala a Alerta o Crítico
   else if (base.pctAlerta >= CFG.GRUPO_CRITICO && ev.some(p => p.estado === 'critico')) base.estado = 'critico';
   else if (base.pctAlerta >= CFG.UMBRAL_GRUPO) base.estado = 'alerta';
   else if (base.pctAlerta >= CFG.GRUPO_ATENCION) base.estado = 'atencion';
@@ -515,7 +517,7 @@ function estadoGrupo(pts){
 /* Puntos en alerta o crítico, del más grave al menos grave, en texto corto */
 function puntosAfectados(pts, max = 3){
   const af = pts.filter(p => p.estado === 'alerta' || p.estado === 'critico').sort(cmpRiesgo);
-  const nom = p => `${p.comunidad}${p.caserio && p.caserio !== p.comunidad ? ' · ' + p.caserio : ''} (${LABEL[p.estado].toLowerCase()}${p.diasSinLluvia != null ? ', ' + p.diasSinLluvia + ' ' + (p.diasSinLluvia === 1 ? 'día' : 'días') + ' sin lluvia' : ''})`;
+  const nom = p => `${p.comunidad}${p.caserio && p.caserio !== p.comunidad ? ' · ' + p.caserio : ''} (${LABEL[p.estado].toLowerCase()}${p.diasSinLluvia > 0 ? ', ' + p.diasSinLluvia + ' ' + (p.diasSinLluvia === 1 ? 'día' : 'días') + ' sin lluvia' : ', poca lluvia en las últimas semanas'})`;
   const txt = af.slice(0, max).map(nom).join('; ');
   return af.length > max ? `${txt}; y ${af.length - max} más` : txt;
 }
@@ -599,6 +601,14 @@ function inicioLluvias(f){
   return null;
 }
 
+/* Lluvia de las últimas 3 semanas (21 días hasta el último día con datos): dato observado, sin supuestos */
+function lluvia21(f){
+  const desde = toS(toT(S.ref) - 20 * DAY);
+  const s = serieDiaria(filtrar({ ...f, desde, hasta: S.ref }));
+  const n = s.acum.length;
+  return { mm: n ? s.acum[n - 1] : 0, dias: s.mm.filter(v => v !== null && v > 0).length, desde, hasta: S.ref };
+}
+
 function resumenSerie(s, rows, inicio){
   const r = { dl:0, ds:0, max: rows.reduce((m,x) => x.mm > m ? x.mm : m, 0), rachaMax:0, rachaIni:-1, rachaFin:-1,
               ult:-1, ultFecha:null, posUlt:0, nUlt:0, diasDesde:null, total: s.acum.length ? s.acum[s.acum.length-1] : 0 };
@@ -635,7 +645,7 @@ function filasRiesgo(pts, nivel){
     return {
       nombre: nivel === 'punto' ? (p0.caserio || p0.comunidad) : p0.comunidad,
       sub: nivel === 'punto' ? p0.responsable : p0.municipio,
-      g, acum: avg(list.map(p => p.acum)), sinLluvia: g.dias,
+      g, acum: avg(list.map(p => p.acum)), desde: list.map(p => p.desde).filter(Boolean).sort()[0] || null, sinLluvia: g.dias,
       ayer: (v => v.length ? avg(v) : null)(list.map(p => p.mmRef).filter(v => v != null)),
       mun: p0.municipio, com: p0.comunidad, cas: p0.caserio, nivel
     };
@@ -646,7 +656,7 @@ function filasRiesgo(pts, nivel){
 function filasMunicipios(pts){
   const m = new Map();
   for (const p of pts){ if (!m.has(p.municipio)) m.set(p.municipio, []); m.get(p.municipio).push(p); }
-  const filas = [...m.entries()].map(([mun, list]) => ({ mun, g: estadoGrupo(list) }));
+  const filas = [...m.entries()].map(([mun, list]) => ({ mun, g: estadoGrupo(list, CFG.GRUPO_MIN_EVALUADOS) }));
   filas.sort((a,b) => ORDEN[a.g.estado] - ORDEN[b.g.estado] || b.g.pctAlerta - a.g.pctAlerta);
   return filas;
 }
@@ -874,7 +884,7 @@ function renderInicio(){
     $('#inicioSpark').innerHTML = '';
     return;
   }
-  const muns = filasMunicipios(pts), gDpto = estadoGrupo(pts);
+  const muns = filasMunicipios(pts), gDpto = estadoGrupo(pts, CFG.GRUPO_MIN_EVALUADOS);
   const repHoy = new Set(S.all.filter(r => r.fecha === S.ref).map(r => r.municipio)).size;
   const et = etiquetaUltimoDato();
   $('#inicioSub').textContent = `Último dato: ${et === fmt(S.ref) ? et : et + ' (' + fmt(S.ref) + ')'} · ${repHoy} de ${muns.length} ${plural(muns.length, 'municipio reportó', 'municipios reportaron')} ese día.`;
@@ -905,16 +915,18 @@ function renderInicio(){
 }
 
 /* =========================== COMUNITARIO =========================== */
-function mensajeComunidad(g){
+function mensajeComunidad(g, l){
   const dias = g.dias, ult = g.ultima;
+  const f21 = l ? `En las últimas 3 semanas (del ${fmtC(l.desde)} al ${fmtC(l.hasta)}) llovieron ${nf(l.mm, 0)} mm en ${l.dias} ${plural(l.dias, 'día', 'días')}` : '';
   switch (g.estado){
     case 'normal': return ['Todo en orden: la tierra tiene humedad', `La última lluvia fue ${cuando(ult)}.`];
     case 'atencion': return [dias ? `Atención: ${dias} ${plural(dias, 'día', 'días')} sin lluvia` : 'Atención: la humedad va bajando', `Todavía hay humedad en la tierra, pero está bajando. La última lluvia fue ${cuando(ult)}. Si pasan más días sin llover, empezará a faltar agua.${g.k > 0 ? ` ${plural(g.k, 'Un punto de la comunidad está', g.k + ' puntos de la comunidad están')} en alerta o crítico.` : ''}`];
-    case 'alerta': return ['Alerta: la tierra se está secando', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Si no llueve pronto, la humedad seguirá bajando y podría afectar los cultivos.`];
-    case 'critico': return ['Crítico: la tierra casi no tiene humedad', `Han pasado ${g.diasAfectados ?? dias ?? 'varios'} días sin lluvia${g.n > 1 ? ' en el punto más afectado' : ''}. Los cultivos podrían empezar a marchitarse si no llueve pronto.`];
+    case 'alerta': return ['Alerta: ha llovido poco en las últimas semanas', l ? `${f21}. Es poca lluvia; si no llueve pronto, la humedad de la tierra seguirá bajando.${g.n > 1 ? ' Revisa el punto más afectado.' : ''}` : 'Si no llueve pronto, la humedad de la tierra seguirá bajando.'];
+    case 'critico': return ['Crítico: ha llovido muy poco en las últimas semanas', l ? `${f21} (${nf(l.mm / 21, 1)} mm por día). Es muy poca lluvia para que la tierra conserve humedad; los cultivos podrían empezar a marchitarse si no llueve pronto.${g.n > 1 ? ' Revisa el punto más afectado.' : ''}` : 'Los cultivos podrían empezar a marchitarse si no llueve pronto.'];
     default: return ['Pocos datos para evaluar la humedad', `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada. Qué hacer: pide al observador que envíe su registro todos los días.`];
   }
 }
+
 function guardarC(){ try { localStorage.setItem('siap_com', JSON.stringify({ mun:C.mun, com:C.com, cas:C.cas, inf:C.inf })); } catch (e) {} }
 function cargarC(){ try { const v = JSON.parse(localStorage.getItem('siap_com') || 'null'); if (v){ C.mun = v.mun || ''; C.com = v.com || ''; C.cas = v.cas || ''; C.inf = v.inf || ''; } } catch (e) {} }
 
@@ -944,15 +956,17 @@ function renderComunitario(){
   $('#comTitulo').textContent = nombre;
   $('#comEyebrow').textContent = `${C.mun} · Vista comunitaria`;
 
-  const [t, d] = mensajeComunidad(g);
+  const [t, d] = mensajeComunidad(g, lluvia21(base));
   setBanner($('#comBanner'), g.estado, t, d, g.estado === 'sindatos' ? null : baldeHTML(g));
   $('#comNota').textContent = `Último día con datos: ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}${C.inf ? ` Gráfica y números con los registros de ${C.inf}; el estado de humedad es del punto de monitoreo.` : ''}`;
 
   const inicioC = inicioLluvias(base);
   const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
+  const noRep = s.mm.filter(v => v === null).length;
   const kpisCom = [
-    { v: `${nf(r.total, 0)} mm`, t: 'Lluvia total del período' },
+    { v: `${nf(r.total, 0)} mm`, t: s.fechas.length ? `Lluvia total desde el ${fmtL(s.fechas[0])}` : 'Lluvia total del período' },
     { v: String(r.dl), t: 'Días con lluvia' },
+    { v: String(r.ds), t: `Días sin lluvia${noRep ? ` (y ${noRep} sin reporte)` : ''}` },
     { v: g.ultima ? (g.dias === 0 ? 'Último día' : `Hace ${g.dias} ${plural(g.dias, 'día', 'días')}`) : 'Sin lluvia', t: `Última lluvia${g.ultima ? ' (' + fmtC(g.ultima) + ')' : ''}` }
   ];
   $('#comKpis').innerHTML = kpisCom.map(k => `<div class="kpi"><b>${esc(k.v)}</b><span>${esc(k.t)}</span></div>`).join('');
@@ -1024,7 +1038,8 @@ function renderMunicipal(){
   F.inf = llenar($('#fInf'), uniq(A.filter(r => (!F.mun || r.municipio === F.mun) && (!F.com || r.comunidad === F.com) && (!F.cas || r.caserio === F.cas)).map(r => r.responsable)), 'Todos', F.inf);
   $('#fDesde').value = F.desde; $('#fHasta').value = F.hasta;
 
-  const rows = filtrar(F), pts = puntosDe(F), g = estadoGrupo(pts);
+  const minEv = (F.com || F.cas) ? 1 : CFG.GRUPO_MIN_EVALUADOS;   // a nivel de comunidad o caserío no aplica el mínimo
+  const rows = filtrar(F), pts = puntosDe(F), g = estadoGrupo(pts, minEv);
   const terr = F.com ? `${F.com}${F.mun ? ' · ' + F.mun : ''}` : F.mun || 'Departamento de Chiquimula';
   $('#munTitulo').textContent = terr;
   $('#munBase').textContent = `Base activa: ${nf(A.length)} registros. Filtro actual: ${nf(rows.length)} registros.`;
@@ -1048,7 +1063,9 @@ function renderMunicipal(){
     if (g.estado === 'alerta' || g.estado === 'critico')
       det = `Supera el umbral de ${CFG.UMBRAL_GRUPO}% definido para dar seguimiento en campo. Puntos afectados: ${afect}.`;
     else if (g.k > 0)
-      det = `${plural(g.k, 'Hay 1 punto', 'Hay ' + g.k + ' puntos')} que requiere${g.k === 1 ? '' : 'n'} seguimiento: ${afect}. El conjunto sigue por debajo del umbral de ${CFG.UMBRAL_GRUPO}%, pero conviene atender ${g.k === 1 ? 'ese punto' : 'esos puntos'}.`;
+      det = g.ev < minEv
+        ? `${plural(g.k, 'Hay 1 punto', 'Hay ' + g.k + ' puntos')} que requiere${g.k === 1 ? '' : 'n'} seguimiento: ${afect}. Solo ${g.ev} ${plural(g.ev, 'punto tiene', 'puntos tienen')} datos suficientes, por eso el conjunto no se marca como alerta, pero conviene atender ${g.k === 1 ? 'ese punto' : 'esos puntos'}.`
+        : `${plural(g.k, 'Hay 1 punto', 'Hay ' + g.k + ' puntos')} que requiere${g.k === 1 ? '' : 'n'} seguimiento: ${afect}. El conjunto sigue por debajo del umbral de ${CFG.UMBRAL_GRUPO}%, pero conviene atender ${g.k === 1 ? 'ese punto' : 'esos puntos'}.`;
     else if (g.estado === 'atencion')
       det = 'La humedad estimada va bajando; conviene vigilar.';
     else det = 'Ningún punto en alerta ni crítico.';
@@ -1105,7 +1122,7 @@ function renderMunicipal(){
     `<thead><tr><th>${nivel === 'punto' ? 'Caserío' : 'Comunidad'}</th><th>Día anterior</th><th>Acumulado</th><th>Sin lluvia</th><th>Humedad estimada</th><th>Puntos con datos</th><th>Estado</th></tr></thead><tbody>` +
     filas.map((f, i) => `<tr tabindex="0" data-i="${i}" data-mun="${esc(f.mun)}" data-com="${esc(f.com)}" data-cas="${nivel === 'punto' ? esc(f.cas) : ''}" class="e-${f.g.estado}">
       <td><b>${esc(f.nombre)}</b><div class="sub">${esc(f.sub)}</div></td>
-      <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
+      <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm${f.desde ? `<div class="sub">desde ${fmtC(f.desde)}</div>` : ''}</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
       <td>${f.g.pctReserva == null ? '<span class="sub">Sin estimar</span>' : `<div class="barra"><span><i style="width:${Math.round(f.g.pctReserva)}%"></i></span>${Math.round(f.g.pctReserva)}%</div>`}</td>
       <td>${f.g.ev} de ${f.g.n}</td><td>${chip(estadoVista(f.g))}${estadoVista(f.g) === 'sindatos' && f.g.motivo ? `<div class="sub">${esc(f.g.motivo)}</div>` : ''}</td></tr>`).join('') + '</tbody>';
 
@@ -1415,6 +1432,7 @@ async function exportarPDF(ctx){
       doc.text(f.g.pctReserva == null ? '-' : `${Math.round(f.g.pctReserva)} %`, X[2] + 1.5, y + 2.5);
       doc.text(f.sinLluvia == null ? '-' : `${f.sinLluvia} ${f.sinLluvia === 1 ? 'día' : 'días'}`, X[3] + 1.5, y + 2.5);
       doc.text(`${nf(f.acum, 0)} mm`, X[4] + 1.5, y + 2.5);
+      if (f.desde){ doc.setFontSize(7.5); doc.setTextColor(120, 130, 145); doc.text(`desde ${fmtC(f.desde)}`, X[4] + 1.5, y + 6.2); doc.setFontSize(8.5); }
       doc.setFontSize(7.5); doc.setTextColor(120, 130, 145);
       doc.text(String(f.sub).slice(0, 38), X[0] + 1.5, y + 6.2);
       if (f.g.estado === 'sindatos' && f.g.motivo) doc.text(String(f.g.motivo).slice(0, 34), X[1] + 1.5, y + 6.2);
