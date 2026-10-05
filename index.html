@@ -568,7 +568,7 @@ function lluviaDia(f, fecha){
 }
 
 /* ---------- series diarias (promedio entre los puntos del filtro) ---------- */
-function serieDiaria(rows){
+function serieDiaria(rows, hasta){
   const m = new Map();
   for (const r of rows){
     let a = m.get(r.fecha);
@@ -578,7 +578,8 @@ function serieDiaria(rows){
   const out = { fechas:[], mm:[], acum:[], n:[], pos:[] };
   if (!m.size) return out;
   const ks = [...m.keys()].sort();
-  const fin = toT(ks[ks.length - 1]);
+  let fin = toT(ks[ks.length - 1]);
+  if (hasta && toT(hasta) > fin) fin = toT(hasta);   // llega hasta el último día con datos del sistema; el día sin reporte queda en blanco
   let ac = 0;
   for (let t = toT(ks[0]); t <= fin; t += DAY){
     const f = toS(t), a = m.get(f);
@@ -724,7 +725,7 @@ const charts = { com:null, mun:null, cards:[] };
 const CTX = { com:null, mun:null };
 const C = { mun:'', com:'', cas:'', inf:'', per:'todo' };                       // vista comunitaria
 const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
-let cardsN = 12, cardsLista = [], cardsRows = new Map();
+let cardsN = 12, cardsLista = [], cardsRows = new Map(), cardsHasta = '';
 
 /* Qué hacer según el estado (texto editable) */
 const ACCION = {
@@ -807,7 +808,7 @@ const pluginAnot = {
       etiqueta(ch.ctx, `Total acumulado: ${nf(o.total, 0)} mm`, a.right - 6, Math.min(sc.y1.getPixelForValue(o.total) + 18, a.bottom - 24), 'right', '#1565c0', a);
     if (o.secaDesde != null){
       const d = n - o.secaDesde;
-      etiqueta(ch.ctx, `${d} ${plural(d, 'día', 'días')} sin lluvia`, a.right - 4, a.bottom - 6, 'right', '#8a3d07', a);
+      etiqueta(ch.ctx, o.etiquetaSeca || `${d} ${plural(d, 'día', 'días')} sin lluvia`, a.right - 4, a.bottom - 6, 'right', '#8a3d07', a);
     }
   }
 };
@@ -961,7 +962,7 @@ function renderComunitario(){
   $('#comNota').textContent = `Último día con datos: ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. La humedad es una estimación según la lluvia registrada, no una medición directa.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}${C.inf ? ` Gráfica y números con los registros de ${C.inf}; el estado de humedad es del punto de monitoreo.` : ''}`;
 
   const inicioC = inicioLluvias(base);
-  const s = serieDiaria(rows), r = resumenSerie(s, rows, inicioC);
+  const s = serieDiaria(rows, rg.hasta), r = resumenSerie(s, rows, inicioC);
   const noRep = s.mm.filter(v => v === null).length;
   const kpisCom = [
     { v: `${nf(r.total, 0)} mm`, t: s.fechas.length ? `Lluvia total desde el ${fmtL(s.fechas[0])}` : 'Lluvia total del período' },
@@ -975,6 +976,10 @@ function renderComunitario(){
   let maxIdx = null, maxVal = 0;
   s.mm.forEach((v, i) => { if (v !== null && v > maxVal){ maxVal = v; maxIdx = i; } });
   const anot = s.fechas.length ? { maxIdx: maxVal > 0 ? maxIdx : null, maxVal, total: r.total, secaDesde: r.ult >= 0 && r.ult < s.fechas.length - 1 ? r.ult + 1 : null } : null;
+  if (anot && anot.secaDesde != null){
+    const n = s.fechas.length, d = n - anot.secaDesde, nr = s.mm.slice(anot.secaDesde).filter(v => v === null).length;
+    anot.etiquetaSeca = `${d} ${plural(d, 'día', 'días')} sin lluvia` + (nr === 0 ? '' : nr === 1 && s.mm[n - 1] === null ? ' (el último sin reporte)' : ` (${nr} sin reporte)`);
+  }
   if (s.fechas.length) charts.com = crearGrafica($('#comChart'), s, { anot });
   $('#comTL').innerHTML = htmlTimeline(s);
 
@@ -1080,7 +1085,8 @@ function renderMunicipal(){
       `${fut.slice(0, 5).map(x => `${x.comunidad} · ${x.responsable} (${fmtC(x.fecha)}, ${nf(x.mm, 1)} mm)`).join('; ')}${fut.length > 5 ? `; y ${fut.length - 5} más` : ''}. No se usan en los cálculos. Corrige la fecha en Kobo.`);
 
   const inicio = inicioLluvias(F);
-  const s = serieDiaria(rows), r = resumenSerie(s, rows, inicio);
+  cardsHasta = F.hasta && F.hasta < S.ref ? F.hasta : S.ref;
+  const s = serieDiaria(rows, cardsHasta), r = resumenSerie(s, rows, inicio);
   const cobertura = pts.length ? Math.round(pts.reduce((a, p) => a + p.ult7, 0) / (7 * pts.length) * 100) : 0;
   const nInf = new Set(rows.map(x => x.responsable).filter(Boolean)).size;
   const ay = lluviaDia(F, S.ref);
@@ -1154,7 +1160,7 @@ function pintarCards(){
   // si el filtro deja un solo punto, su gráfica sería igual a la de arriba: se omite para no repetirla
   const unico = cardsLista.length === 1;
   $('#puntos').innerHTML = lista.map(p => {
-    const rows = cardsRows.get(p.key), s = serieDiaria(rows), r = resumenSerie(s, rows);
+    const rows = cardsRows.get(p.key), s = serieDiaria(rows, cardsHasta), r = resumenSerie(s, rows);
     return `<article class="card punto"><div class="ph"><div><h3>${esc(p.comunidad)} · ${esc(p.caserio || p.comunidad)}</h3>
       <div class="sub"><b>${esc(p.responsable)}</b> · ${esc(p.municipio)}</div></div><div style="text-align:right">${chip(p.estado)}${p.estado === 'sindatos' && p.motivo ? `<div class="sub">${esc(p.motivo)}</div>` : ''}</div></div>
       <p class="stats">Período: <b>${fmt(s.fechas[0])} – ${fmt(s.fechas[s.fechas.length - 1])}</b> · Acumulado: <b>${nf(r.total, 0)} mm</b> · Días con lluvia: <b>${r.dl}</b> · Días sin lluvia: <b>${r.ds}</b> · Máx. diario: <b>${nf(r.max, 1)} mm</b></p>
@@ -1163,7 +1169,7 @@ function pintarCards(){
   }).join('') || '<p class="nota">No hay puntos con registros para este filtro.</p>';
   $$('#puntos canvas').forEach((cv, i) => {
     const rows = cardsRows.get(lista[i].key);
-    charts.cards.push(crearGrafica(cv, serieDiaria(rows), { maxTicks: 6 }));
+    charts.cards.push(crearGrafica(cv, serieDiaria(rows, cardsHasta), { maxTicks: 6 }));
   });
   const mas = cardsLista.length - cardsN;
   $('#masPuntos').hidden = mas <= 0;
