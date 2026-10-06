@@ -417,9 +417,11 @@ function fechaGT(iso){
 }
 
 function cargarPayload(p, ejemplo){
-  // Un registro no puede ser posterior al momento en que se generó datos.json. Si lo es, la fecha está mal
+  // El registro de las 7 am es de la lluvia del día anterior: el último día que puede estar reportado es AYER
+  // (la fecha de actualización de datos.json menos un día). Un registro con fecha de hoy o futura tiene la fecha mal
   // escrita en Kobo: se separa para no mover la fecha de referencia ni dejar a todos los puntos "sin reportes".
-  const limite = (p.actualizado_utc && fechaGT(p.actualizado_utc)) || fechaGT(new Date().toISOString());
+  const hoyAct = (p.actualizado_utc && fechaGT(p.actualizado_utc)) || fechaGT(new Date().toISOString());
+  const limite = hoyAct ? toS(toT(hoyAct) - DAY) : '';
   const todos = normalizar(p.datos);
   S.limite = limite;
   S.futuros = limite ? todos.filter(r => r.fecha > limite) : [];
@@ -557,10 +559,15 @@ function rangoPeriodo(tipo){
 
 /* Lluvia promedio del último día con datos (el registro de las 7 am es del día anterior) */
 function lluviaDia(f, fecha){
-  const rows = filtrar({ ...f, desde: fecha, hasta: fecha });
+  let usada = fecha, rows = filtrar({ ...f, desde: fecha, hasta: fecha });
+  if (!rows.length){                       // ese día nadie reportó: se toma el último día con reporte (hasta 7 días atrás)
+    for (let k = 1; k <= 7 && !rows.length; k++){ usada = toS(toT(fecha) - k * DAY); rows = filtrar({ ...f, desde: usada, hasta: usada }); }
+    if (!rows.length) usada = fecha;
+  }
   const puntos = new Set(rows.map(keyP));
   return {
-    fecha, n: rows.length, puntosReportaron: puntos.size, puntosTotal: puntosDe(f).length,
+    fecha: usada, fechaRef: fecha, atrasado: rows.length > 0 && usada !== fecha,
+    n: rows.length, puntosReportaron: puntos.size, puntosTotal: puntosDe(f).length,
     conLluvia: new Set(rows.filter(r => r.mm > 0).map(keyP)).size,
     mm: rows.length ? avg(rows.map(r => r.mm)) : null,
     max: rows.reduce((m, r) => r.mm > m ? r.mm : m, 0)
@@ -1013,8 +1020,15 @@ function lecturaPeriodo(s, r, g, nombre, pts, ay){
   // 2. lluvia más reciente
   let rec;
   if (!ay || ay.mm == null) rec = uno ? `El punto de monitoreo no reportó el ${fmtL(S.ref)}, que es el último día con datos.` : `Ningún punto reportó el ${fmtL(S.ref)}, que es el último día con datos.`;
-  else if (ay.puntosReportaron === 1) rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia ? `llovió ${nf(ay.mm, 1)} mm` : 'no llovió'}.`;
-  else rec = `El ${fmtL(S.ref)}, último día con datos, ${ay.conLluvia === 0 ? 'no llovió en ningún punto con reporte.' : `llovió en ${ay.conLluvia} de los ${ay.puntosReportaron} puntos con reporte, con un promedio de ${nf(ay.mm, 1)} mm.`}`;
+  else {
+    const quien = uno ? 'el punto no reportó' : 'ningún punto reportó';
+    const lluvia = ay.puntosReportaron === 1
+      ? (ay.conLluvia ? `llovió ${nf(ay.mm, 1)} mm` : 'no llovió')
+      : (ay.conLluvia === 0 ? 'no llovió en ningún punto con reporte' : `llovió en ${ay.conLluvia} de los ${ay.puntosReportaron} puntos con reporte, con un promedio de ${nf(ay.mm, 1)} mm`);
+    rec = ay.atrasado
+      ? `El ${fmtL(S.ref)} ${quien}. El último día con reporte fue el ${fmtL(ay.fecha)}: ${lluvia}.`
+      : `El ${fmtL(ay.fecha)}, último día con datos, ${lluvia}.`;
+  }
   if (ay && ay.mm != null && ay.conLluvia === 0 && g.ultima) rec += ` La última lluvia fue el ${fmtL(g.ultima)}, hace ${g.dias} ${plural(g.dias, 'día', 'días')}.`;
   items.push({ titulo: 'Lluvia más reciente', texto: rec });
   // 3. resumen del período
@@ -1081,8 +1095,8 @@ function renderMunicipal(){
   $('#munCalidad').hidden = !fut.length;
   if (fut.length)
     setBanner($('#munCalidad'), 'atencion',
-      `Revisar fechas: ${fut.length} ${plural(fut.length, 'registro tiene', 'registros tienen')} una fecha posterior a la última actualización`,
-      `${fut.slice(0, 5).map(x => `${x.comunidad} · ${x.responsable} (${fmtC(x.fecha)}, ${nf(x.mm, 1)} mm)`).join('; ')}${fut.length > 5 ? `; y ${fut.length - 5} más` : ''}. No se usan en los cálculos. Corrige la fecha en Kobo.`);
+      `Revisar fechas: ${fut.length} ${plural(fut.length, 'registro tiene', 'registros tienen')} la fecha de hoy o una fecha futura`,
+      `${fut.slice(0, 5).map(x => `${x.comunidad} · ${x.responsable} (${fmtC(x.fecha)}, ${nf(x.mm, 1)} mm)`).join('; ')}${fut.length > 5 ? `; y ${fut.length - 5} más` : ''}. No se usan en los cálculos: el registro de las 7 am es de la lluvia del día anterior. Corrige la fecha en Kobo.`);
 
   const inicio = inicioLluvias(F);
   cardsHasta = F.hasta && F.hasta < S.ref ? F.hasta : S.ref;
@@ -1091,8 +1105,8 @@ function renderMunicipal(){
   const nInf = new Set(rows.map(x => x.responsable).filter(Boolean)).size;
   const ay = lluviaDia(F, S.ref);
   const kpiAyer = ay.mm == null
-    ? `<div class="kpi"><b>Sin reportes</b><span>Lluvia del día anterior (${fmtC(S.ref)}): ningún punto de este filtro reportó</span></div>`
-    : `<div class="kpi"><b>${nf(ay.mm, 1)} mm</b><span>Promedio de lluvia del día anterior (${fmtC(S.ref)})<br>${ay.conLluvia} de ${ay.puntosReportaron} ${plural(ay.puntosReportaron, 'punto', 'puntos')} con reporte ${plural(ay.conLluvia, 'tuvo', 'tuvieron')} lluvia · máx. ${nf(ay.max, 1)} mm</span></div>`;
+    ? `<div class="kpi"><b>Sin reportes</b><span>Lluvia del día anterior (${fmtC(S.ref)}): ningún punto de este filtro reportó en los últimos días</span></div>`
+    : `<div class="kpi"><b>${nf(ay.mm, 1)} mm</b><span>${ay.atrasado ? `Lluvia promedio del ${fmtC(ay.fecha)}, último día con reporte (el ${fmtC(S.ref)} nadie reportó)` : `Promedio de lluvia del día anterior (${fmtC(ay.fecha)})`}<br>${ay.conLluvia} de ${ay.puntosReportaron} ${plural(ay.puntosReportaron, 'punto', 'puntos')} con reporte ${plural(ay.conLluvia, 'tuvo', 'tuvieron')} lluvia · máx. ${nf(ay.max, 1)} mm</span></div>`;
   $('#munKpis').innerHTML = kpiAyer +
     `<div class="kpi e-${g.estado}"><b>${g.k} de ${g.ev}</b><span>Puntos en alerta o crítico</span></div>
      <div class="kpi"><b>${nf(r.total, 1)} mm</b><span>Precipitación promedio acumulada</span></div>
@@ -1147,7 +1161,7 @@ function renderMunicipal(){
   CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: ev, banner: { titulo: tit, detalle: det },
               lectura, filas, serie: s, accion: ACCION_INST[ev],
               kpis: [
-                ay.mm == null ? { v: 'Sin reportes', t: `Lluvia del día anterior (${fmtC(S.ref)})` } : { v: `${nf(ay.mm, 1)} mm`, t: `Promedio de lluvia del día anterior (${fmtC(S.ref)})` },
+                ay.mm == null ? { v: 'Sin reportes', t: `Lluvia del día anterior (${fmtC(S.ref)})` } : { v: `${nf(ay.mm, 1)} mm`, t: ay.atrasado ? `Lluvia promedio del ${fmtC(ay.fecha)} (último día con reporte)` : `Promedio de lluvia del día anterior (${fmtC(ay.fecha)})` },
                 { v: `${g.k} de ${g.ev}`, t: 'Puntos en alerta o crítico' },
                 { v: `${nf(r.total, 1)} mm`, t: 'Precipitación promedio acumulada' },
                 { v: `${cobertura} %`, t: 'Cobertura de monitoreo (últimos 7 días)' }
@@ -1481,7 +1495,7 @@ function pintarPie(){
     try { act = new Date(S.meta.actualizado).toLocaleString('es-GT', { timeZone:'America/Guatemala', dateStyle:'long', timeStyle:'short' }); } catch (e) { act = S.meta.actualizado; }
   }
   const nfut = S.futuros.length;
-  $('#pie').textContent = `${nfut ? `Se ignoraron ${nfut} ${plural(nfut, 'registro con fecha futura', 'registros con fecha futura')} (revisa la fecha en Kobo). ` : ''}${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
+  $('#pie').textContent = `${nfut ? `Se ignoraron ${nfut} ${plural(nfut, 'registro con fecha de hoy o futura', 'registros con fecha de hoy o futura')} (revisa la fecha en Kobo). ` : ''}${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
   $('#metodo').textContent =
     `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. ` +
     `Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad. ` +
