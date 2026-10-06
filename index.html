@@ -768,15 +768,25 @@ function ir(n){
 }
 
 /* ---------------- gráfica (la misma de siempre: barras diarias + línea de acumulado) ---------------- */
-function etiqueta(ctx, t, x, y, al, col, a){
+/* Etiquetas sobre la gráfica: cada una busca un hueco libre para no encimarse con las demás */
+const solapa = (p, q) => p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.h && q.y < p.y + p.h;
+function etiqueta(ctx, t, x, y, al, col, a, ocupados){
   ctx.save();
   ctx.font = '700 11px Inter, "Segoe UI", Arial, sans-serif';
   const w = ctx.measureText(t).width;
   let x0 = al === 'right' ? x - w : x;
-  if (x0 + w > a.right) x0 = a.right - w - 2;
-  if (x0 < a.left) x0 = a.left + 2;
-  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(x0 - 3, y - 11, w + 6, 15);
-  ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(t, x0, y);
+  x0 = Math.max(a.left + 2, Math.min(x0, a.right - w - 2));
+  let yy = y;
+  for (const d of [0, 1, -1, 2, -2, 3, -3, 4, -4]){          // prueba hacia abajo y hacia arriba
+    const cand = y + d * 16;
+    if (cand < a.top + 11 || cand > a.bottom - 3) continue;
+    const r = { x: x0 - 3, y: cand - 11, w: w + 6, h: 15 };
+    if (!ocupados.some(o => solapa(o, r))){ yy = cand; break; }
+  }
+  const r = { x: x0 - 3, y: yy - 11, w: w + 6, h: 15 };
+  ocupados.push(r);
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.fillStyle = col; ctx.textBaseline = 'alphabetic'; ctx.fillText(t, x0, yy);
   ctx.restore();
 }
 const pluginAnot = {
@@ -790,15 +800,17 @@ const pluginAnot = {
   },
   afterDatasetsDraw(ch, _a, o){
     if (!o) return;
-    const a = ch.chartArea, sc = ch.scales, n = ch.data.labels.length, step = a.width / n;
-    if (o.maxIdx != null)
-      etiqueta(ch.ctx, `Día más lluvioso: ${nf(o.maxVal, 0)} mm`, a.left + step * (o.maxIdx + .5) + 6, Math.max(sc.y.getPixelForValue(o.maxVal) - 4, a.top + 12), 'left', '#0f2742', a);
-    if (o.total != null)
-      etiqueta(ch.ctx, `Total acumulado: ${nf(o.total, 0)} mm`, a.right - 6, Math.min(sc.y1.getPixelForValue(o.total) + 18, a.bottom - 24), 'right', '#1565c0', a);
+    const a = ch.chartArea, sc = ch.scales, n = ch.data.labels.length, step = a.width / n, ocupados = [];
     if (o.secaDesde != null){
       const d = n - o.secaDesde;
-      etiqueta(ch.ctx, o.etiquetaSeca || `${d} ${plural(d, 'día', 'días')} sin lluvia`, a.right - 4, a.bottom - 6, 'right', '#8a3d07', a);
+      etiqueta(ch.ctx, o.etiquetaSeca || `${d} ${plural(d, 'día', 'días')} sin lluvia`, a.right - 4, a.bottom - 6, 'right', '#8a3d07', a, ocupados);
     }
+    if (o.maxIdx != null){
+      const px = a.left + step * (o.maxIdx + .5), enDerecha = (o.maxIdx + .5) / n > 0.6;   // si la barra está a la derecha, el texto va a su izquierda
+      etiqueta(ch.ctx, `Día más lluvioso: ${nf(o.maxVal, 0)} mm`, enDerecha ? px - 6 : px + 6, Math.max(sc.y.getPixelForValue(o.maxVal) - 4, a.top + 12), enDerecha ? 'right' : 'left', '#0f2742', a, ocupados);
+    }
+    if (o.total != null)
+      etiqueta(ch.ctx, `Total acumulado: ${nf(o.total, 0)} mm`, a.right - 6, Math.min(sc.y1.getPixelForValue(o.total) + 18, a.bottom - 24), 'right', '#1565c0', a, ocupados);
   }
 };
 if (typeof Chart !== 'undefined') Chart.register(pluginAnot);
