@@ -125,9 +125,6 @@ details.mas .kpis{margin-top:12px}
 .barra{display:flex;align-items:center;gap:8px;min-width:110px}
 .barra span{display:block;width:64px;height:9px;background:#edf0f3;border-radius:5px;overflow:hidden;flex-shrink:0}
 .barra span i{display:block;height:100%;background:var(--sol,#667085)}
-.inf{list-style:none;margin:0;padding:0;max-height:340px;overflow:auto}
-.inf li{display:flex;justify-content:space-between;gap:12px;padding:9px 4px;border-bottom:1px solid #edf0f3;font-size:14px}
-.inf li small{display:block;color:var(--muted);font-size:12.5px}
 
 /* Municipios */
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:12px}
@@ -320,10 +317,6 @@ footer p{margin-top:8px;max-width:80ch}
       <div class="scroll" style="margin-top:8px"><table class="tbl" id="tablaRiesgo"></table></div>
     </div>
 
-    <div class="card">
-      <h2>Acumulado por informante</h2>
-      <ul class="inf" id="listaInf" style="margin-top:6px"></ul>
-    </div>
 
     <div>
       <h2 class="sec">Análisis por comunidad e informante <small>cada tarjeta se genera desde los datos</small></h2>
@@ -668,17 +661,6 @@ function filasMunicipios(pts){
   filas.sort((a,b) => ORDEN[a.g.estado] - ORDEN[b.g.estado] || b.g.pctAlerta - a.g.pctAlerta);
   return filas;
 }
-function acumPorInformante(rows){
-  const m = new Map();
-  for (const r of rows){
-    if (!r.responsable) continue;
-    let a = m.get(r.responsable);
-    if (!a){ a = { nombre:r.responsable, sum:0, lugar:'' }; m.set(r.responsable, a); }
-    a.sum += r.mm; a.lugar = `${r.comunidad} · ${r.caserio || r.comunidad}`;
-  }
-  return [...m.values()].sort((a,b) => b.sum - a.sum);
-}
-
 /* ---------- datos de ejemplo (solo si no se puede leer datos.json) ---------- */
 function generarEjemplo(){
   let seed = 20260510;
@@ -1145,10 +1127,6 @@ function renderMunicipal(){
       <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm${f.desde ? `<div class="sub">desde ${fmtC(f.desde)}</div>` : ''}</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
       <td>${f.g.pctReserva == null ? '<span class="sub">Sin estimar</span>' : `<div class="barra"><span><i style="width:${Math.round(f.g.pctReserva)}%"></i></span>${Math.round(f.g.pctReserva)}%</div>`}</td>
       <td>${f.g.ev} de ${f.g.n}</td><td>${chip(estadoVista(f.g))}${estadoVista(f.g) === 'sindatos' && f.g.motivo ? `<div class="sub">${esc(f.g.motivo)}</div>` : ''}</td></tr>`).join('') + '</tbody>';
-
-  // acumulado por informante
-  $('#listaInf').innerHTML = acumPorInformante(rows).map((a, i) =>
-    `<li><span><b>${i + 1}. ${esc(a.nombre)}</b><small>${esc(a.lugar)}</small></span><b>${nf(a.sum, 1)} mm</b></li>`).join('') || '<li class="sub">Sin registros.</li>';
 
   // tarjetas por punto
   const rp = new Map();
