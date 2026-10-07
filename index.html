@@ -17,7 +17,8 @@ html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.45;font-size:15px}
 [hidden]{display:none!important}
 .wrap{max-width:1560px;margin:0 auto;padding:16px 16px 40px}
-#pantallaInicio,#panelComunitario{max-width:1100px;margin-left:auto;margin-right:auto}   /* inicio y comunitario: más angostos para leerse mejor */
+#pantallaInicio{max-width:1400px;margin-left:auto;margin-right:auto}
+#panelComunitario{max-width:1100px;margin-left:auto;margin-right:auto}   /* la vista comunitaria queda más angosta para leerse mejor */
 .fila2{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,1fr);gap:14px;align-items:start}
 @media (max-width:1100px){.fila2{grid-template-columns:1fr}}
 h1,h2,h3,h4,p{margin:0}
@@ -138,13 +139,21 @@ details.mas .kpis{margin-top:12px}
 
 /* Inicio */
 .dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:10px}
-.opcion{display:flex;flex-direction:column;gap:8px;text-align:left;font-family:inherit;background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 20px;cursor:pointer;color:var(--ink)}
-.opcion:hover{border-color:#9fc3e0}
-.opcion.verde{border:2px solid var(--green2)}
-.opcion h3{font-size:19px;font-weight:800}
-.opcion p{font-size:14px;color:var(--muted)}
-.opcion .go{margin-top:auto;padding-top:8px;font-weight:800;font-size:14px;color:var(--navy)}
-.opcion.verde .go{color:var(--green)}
+.opcion{display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;font-family:inherit;background:#fff;border:2px solid var(--line);border-radius:20px;padding:26px 26px 24px;cursor:pointer;color:var(--ink)}
+.opcion:hover{filter:brightness(.985);transform:translateY(-1px)}
+.opcion .para{display:inline-block;font-size:12.5px;font-weight:700;padding:3px 11px;border-radius:999px}
+.opcion h3{font-size:24px;font-weight:800;line-height:1.15}
+.opcion p{font-size:15px;color:#475467;max-width:46ch}
+.opcion .go{margin-top:auto;display:inline-block;font-weight:800;font-size:14.5px;color:#fff;padding:11px 18px;border-radius:12px}
+/* comunitario: verde · municipal: azul */
+.opcion.verde{background:#f3faf6;border-color:var(--green2)}
+.opcion.verde .para{background:#d5eedf;color:#0b5a3b}
+.opcion.verde h3{color:#0b6b47}
+.opcion.verde .go{background:var(--green)}
+.opcion.azul{background:#f3f8fd;border-color:#8bb8e8}
+.opcion.azul .para{background:#d9e8fb;color:#0b3d91}
+.opcion.azul h3{color:#0d47a1}
+.opcion.azul .go{background:var(--blue)}
 .spark{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .spark svg{flex:1;min-width:220px;height:60px}
 .ribbon{background:#fff3cd;border-bottom:2px solid #e0b100;color:#5c4400;padding:10px 16px;font-size:14px;font-weight:600;text-align:center}
@@ -156,7 +165,7 @@ details.mas .kpis{margin-top:12px}
 .punto h4{font-size:13.5px;margin:12px 0 4px}
 .mas-btn{margin:14px auto 0;display:block}
 
-footer{margin-top:22px;font-size:13px;color:var(--muted)}
+footer{margin:22px auto 0;font-size:13px;color:var(--muted)}
 footer details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px}
 footer summary{cursor:pointer;font-weight:700;color:var(--ink)}
 footer p{margin-top:8px;max-width:80ch}
@@ -204,12 +213,14 @@ footer p{margin-top:8px;max-width:80ch}
     <div class="dos">
       <button class="opcion verde" data-ir="comunitario" type="button">
         <svg class="i g" style="color:var(--green2)" aria-hidden="true"><use href="#i-rain"/></svg>
+        <span class="para">Para familias y líderes comunitarios</span>
         <h3>Panel comunitario</h3>
         <p>Mira cómo está la lluvia y la humedad de la tierra en tu comunidad, con palabras sencillas.</p>
         <span class="go">Entrar al panel comunitario</span>
       </button>
-      <button class="opcion" data-ir="municipal" type="button">
+      <button class="opcion azul" data-ir="municipal" type="button">
         <svg class="i g" style="color:var(--blue)" aria-hidden="true"><use href="#i-chart"/></svg>
+        <span class="para">Para municipalidades e instituciones</span>
         <h3>Panel municipal y departamental</h3>
         <p>Compara municipios y comunidades, revisa las alertas y descarga informes en PDF y Excel.</p>
         <span class="go">Entrar al panel municipal</span>
@@ -761,6 +772,7 @@ function mostrar(n){
   $('#pantallaInicio').hidden = n !== 'inicio';
   $('#panelComunitario').hidden = n !== 'comunitario';
   $('#panelMunicipal').hidden = n !== 'municipal';
+  $('footer').style.maxWidth = ({ inicio: '1400px', comunitario: '1100px' })[n] || '';   // el pie sigue el ancho de la pantalla
   if (n === 'inicio') renderInicio();
   if (n === 'comunitario') renderComunitario();
   if (n === 'municipal') renderMunicipal();
