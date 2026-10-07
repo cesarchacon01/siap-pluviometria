@@ -169,6 +169,7 @@ footer{margin:22px auto 0;font-size:13px;color:var(--muted)}
 footer details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px}
 footer summary{cursor:pointer;font-weight:700;color:var(--ink)}
 footer p{margin-top:8px;max-width:80ch}
+.metodo p{max-width:none;text-align:justify;hyphens:auto;-webkit-hyphens:auto;font-size:13.5px;line-height:1.6;color:#475467;margin-top:10px}
 
 @media (max-width:640px){
   .hero-d{align-items:flex-start}
@@ -346,7 +347,7 @@ footer p{margin-top:8px;max-width:80ch}
   <p id="pie"></p>
   <details style="margin-top:10px">
     <summary>¿Cómo se estima la humedad del suelo?</summary>
-    <p id="metodo"></p>
+    <div id="metodo" class="metodo"></div>
   </details>
 </footer>
 </main>
@@ -1502,12 +1503,13 @@ function pintarPie(){
   }
   const nfut = S.futuros.length;
   $('#pie').textContent = `${nfut ? `Se ignoraron ${nfut} ${plural(nfut, 'registro con fecha de hoy o futura', 'registros con fecha de hoy o futura')} (revisa la fecha en Kobo). ` : ''}${act ? 'Datos actualizados: ' + act.replace(/\.$/, '') + '. ' : ''}Los datos vienen de los registros diarios de los observadores comunitarios (KoboToolbox).`;
-  $('#metodo').textContent =
-    `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. ` +
-    `Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad. ` +
-    `Niveles: Normal desde ${CFG.CORTE_NORMAL}%, Atención desde ${CFG.CORTE_ATENCION}%, Alerta desde ${CFG.CORTE_ALERTA}% y Crítico por debajo (cerca del punto de marchitez permanente). ` +
-    `Un municipio o comunidad pasa a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos están en alerta o crítico. Los días sin reporte no se cuentan como secos: solo bajan la confianza. No se calcula cuántos días más durará la humedad, porque eso depende de la temperatura, del tipo de suelo y del cultivo, datos que no se tienen. Un grupo nunca se muestra como Normal si tiene algún punto en alerta o crítico. ` +
-    `Es una estimación de riesgo, no una medición de la humedad real. Estos valores son supuestos iniciales y deben validarse con personal agrónomo.`;
+  const parrafos = [
+    `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, porque la menor se evapora) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que la temporada empieza con ${Math.round(CFG.INICIO_PCT * 100)}% de humedad.`,
+    `Niveles de cada punto de monitoreo: Normal desde ${CFG.CORTE_NORMAL}%, Atención desde ${CFG.CORTE_ATENCION}%, Alerta desde ${CFG.CORTE_ALERTA}% y Crítico por debajo (cerca del punto de marchitez permanente). Un punto necesita al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada para evaluarse; si no, se muestra como "Datos insuficientes".`,
+    `Comunidades, municipios y departamento: pasan a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos con datos están en alerta o crítico, y nunca se muestran como Normal si tienen algún punto en alerta o crítico. Con menos de ${CFG.GRUPO_MIN_EVALUADOS} puntos con datos, un municipio o el departamento no pasa de Atención, aunque el punto afectado se nombra igual. Si a más del ${Math.round((1 - CFG.COBERTURA_MIN_GRUPO) * 100)}% de los puntos de un grupo le faltan datos, no se afirma que todo esté normal y se muestra como "Datos incompletos". Los días sin reporte no se cuentan como secos: solo bajan la confianza.`,
+    `No se calcula cuántos días más durará la humedad, porque eso depende de la temperatura, del tipo de suelo y del cultivo, datos que no se tienen. Es una estimación de riesgo, no una medición de la humedad real. Estos valores son supuestos iniciales y deben validarse con personal agrónomo.`
+  ];
+  $('#metodo').innerHTML = parrafos.map(t => `<p>${esc(t)}</p>`).join('');
   $('#ribbonEjemplo').hidden = !S.meta.ejemplo;
 }
 
