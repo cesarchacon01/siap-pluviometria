@@ -16,7 +16,10 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;line-height:1.45;font-size:15px}
 [hidden]{display:none!important}
-.wrap{max-width:1180px;margin:0 auto;padding:16px 16px 40px}
+.wrap{max-width:1560px;margin:0 auto;padding:16px 16px 40px}
+#pantallaInicio,#panelComunitario{max-width:1100px;margin-left:auto;margin-right:auto}   /* inicio y comunitario: más angostos para leerse mejor */
+.fila2{display:grid;grid-template-columns:minmax(0,1.9fr) minmax(300px,1fr);gap:14px;align-items:start}
+@media (max-width:1100px){.fila2{grid-template-columns:1fr}}
 h1,h2,h3,h4,p{margin:0}
 .i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .i.g{width:28px;height:28px}
@@ -294,15 +297,16 @@ footer p{margin-top:8px;max-width:80ch}
     <div class="kpis" id="munKpis"></div>
     <details class="mas"><summary>Ver más indicadores del período</summary><div class="kpis" id="munKpis2"></div></details>
 
+    <div class="fila2">
     <div class="card">
       <h2 id="munChartTitulo">Comportamiento promedio diario</h2>
       <p class="sub" id="munRango"></p>
       <div class="chartbox"><canvas id="munChart" role="img" aria-label="Gráfica de barras de lluvia diaria promedio con línea de lluvia acumulada"></canvas></div>
     </div>
-
     <div class="card">
       <h2>Lectura del período</h2>
       <div id="munLectura" class="lect"></div>
+    </div>
     </div>
 
     <div id="secTiles" class="card" hidden>
