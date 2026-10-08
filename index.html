@@ -457,6 +457,7 @@ function statsPunto(key, rows){
   let reserva = CFG.RESERVA_MAX * CFG.INICIO_PCT;
   let acum = 0, diasLluvia = 0, diasSin = 0, max = 0, ultimaLluvia = null;
   let faltantes = 0;
+  let reservaSuperior = reserva;
   const inicio = temp[0];
   const diasPeriodo = inicio ? diffDias(inicio, S.ref) + 1 : 0;
   for (let d = 0; d < diasPeriodo; d++){
@@ -468,11 +469,13 @@ function statsPunto(key, rows){
       faltantes++;
       // Escenario interno; no se publica como estimación si falta lluvia observada.
       reserva = Math.max(0, reserva - CFG.ET_DIA);
+      reservaSuperior = CFG.RESERVA_MAX;
       continue;
     }
     const mm = registro.mm;
     const util = mm >= CFG.LLUVIA_MIN_UTIL ? mm : 0;
     reserva = Math.min(CFG.RESERVA_MAX, Math.max(0, reserva + util - CFG.ET_DIA));
+    reservaSuperior = Math.min(CFG.RESERVA_MAX, Math.max(0, reservaSuperior + util - CFG.ET_DIA));
     acum += mm;
     if (mm > 0){ diasLluvia++; ultimaLluvia = f; } else diasSin++;
     if (mm > max) max = mm;
@@ -481,12 +484,21 @@ function statsPunto(key, rows){
   const ult7 = temp.filter(f => { const d = diffDias(f, S.ref); return d >= 0 && d <= 6; }).length;
   const historia = temp.length;
   const pct = reserva / CFG.RESERVA_MAX * 100;
+  const faltantes7 = Math.min(7, diasPeriodo) - ult7;
+  const diasDesdeReporte = temp.length ? diffDias(temp[temp.length - 1], S.ref) : null;
+  const incierta = reservaSuperior - reserva > 0.000001;
+  let secosConfirmados = 0;
+  for (let t = toT(S.ref); inicio && t >= toT(inicio); t -= DAY){
+    const r = porFecha.get(toS(t));
+    if (!r || r.mm !== 0) break;
+    secosConfirmados++;
+  }
   let motivo = '';
-  if (faltantes) motivo = `${faltantes} días sin reporte desde el inicio del balance; reserva no estimable` ;
+  if (incierta) motivo = `${faltantes7} días sin registro en los últimos 7 días. Último reporte: ${temp.length ? fmt(temp[temp.length - 1]) : 'sin datos'}. La reserva no puede estimarse por registros faltantes${faltantes7 ? '' : ' anteriores'}.`;
   else if (ult7 < CFG.MIN_REPORTES_7D) motivo = `Solo ${ult7} de los últimos 7 días con reporte`;
   else if (historia < CFG.MIN_HISTORIAL_DIAS) motivo = `Solo ${historia} días de registro en la temporada`;
   let estado;
-  if (faltantes || ult7 < CFG.MIN_REPORTES_7D || historia < CFG.MIN_HISTORIAL_DIAS) estado = 'sindatos';
+  if (incierta || ult7 < CFG.MIN_REPORTES_7D || historia < CFG.MIN_HISTORIAL_DIAS) estado = 'sindatos';
   else if (pct >= CFG.CORTE_NORMAL) estado = 'normal';
   else if (pct >= CFG.CORTE_ATENCION) estado = 'atencion';
   else if (pct >= CFG.CORTE_ALERTA) estado = 'alerta';
@@ -501,7 +513,8 @@ function statsPunto(key, rows){
     key, municipio: ultima.municipio, comunidad: ultima.comunidad, caserio: ultima.caserio,
     responsable: rec[0] || '', informantes: rec.length ? rec : informantes,
     estado, motivo, pct, reserva,
-    diasSinLluvia: ultimaLluvia ? diffDias(ultimaLluvia, S.ref) : null, ultimaLluvia,
+    diasSinLluvia: porFecha.has(S.ref) ? secosConfirmados : null, ultimaLluvia,
+    faltantesHistoricos: faltantes, faltantes7, diasDesdeReporte, reservaSuperior, incierta,
     desde: temp[0] || fechas[0], acum, diasLluvia, diasSin, max, mmRef, ult7, historia, lastRec: fechas[fechas.length - 1]
   };
 }
@@ -517,7 +530,7 @@ function estadoGrupo(pts, minEv = 1){
   base.dias = ds.length ? Math.min(...ds) : null;
   base.ultima = pts.map(p => p.ultimaLluvia).filter(Boolean).sort().pop() || null;
   if (!ev.length){
-    base.motivo = n === 1 ? pts[0].motivo : (pts.some(p => p.ult7 < CFG.MIN_REPORTES_7D) ? 'Pocos reportes en los últimos 7 días' : 'Poco historial de registro');
+    base.motivo = n === 1 ? pts[0].motivo : (pts.some(p => p.ult7 < CFG.MIN_REPORTES_7D) ? 'Pocos reportes en los últimos 7 días' : 'Historial insuficiente o registros faltantes para estimar la reserva');
     return base;
   }
   base.k = ev.filter(p => p.estado === 'alerta' || p.estado === 'critico').length;
@@ -1164,7 +1177,7 @@ function renderMunicipal(){
   $('#riesgoTitulo').textContent = nivel === 'punto' ? `Puntos de monitoreo${F.com ? ' de ' + F.com : ''} por nivel de riesgo` : `Comunidades${F.mun ? ' de ' + F.mun : ''} por nivel de riesgo`;
   const filas = filasRiesgo(pts, nivel);
   $('#tablaRiesgo').innerHTML =
-    `<thead><tr><th>${nivel === 'punto' ? 'Caserío' : 'Comunidad'}</th><th>Día anterior</th><th>Acumulado</th><th>Sin lluvia</th><th>Reserva hídrica estimada</th><th>Puntos con datos</th><th>Estado</th></tr></thead><tbody>` +
+    `<thead><tr><th>${nivel === 'punto' ? 'Caserío' : 'Comunidad'}</th><th>Día anterior</th><th>Acumulado</th><th>Días seguidos con 0 mm confirmado</th><th>Reserva hídrica estimada</th><th>Puntos con datos</th><th>Estado</th></tr></thead><tbody>` +
     filas.map((f, i) => `<tr tabindex="0" data-i="${i}" data-mun="${esc(f.mun)}" data-com="${esc(f.com)}" data-cas="${nivel === 'punto' ? esc(f.cas) : ''}" class="e-${f.g.estado}">
       <td><b>${esc(f.nombre)}</b><div class="sub">${esc(f.sub)}</div></td>
       <td>${f.ayer == null ? '<span class="sub">Sin reporte</span>' : nf(f.ayer, 1) + ' mm'}</td><td>${nf(f.acum, 0)} mm${f.desde ? `<div class="sub">desde ${fmtC(f.desde)}</div>` : ''}</td><td>${f.sinLluvia == null ? '—' : f.sinLluvia + ' ' + plural(f.sinLluvia, 'día', 'días')}</td>
@@ -1520,7 +1533,7 @@ function pintarPie(){
   const parrafos = [
     `Con los datos de lluvia se hace un balance simple: cada día entra la lluvia registrada (solo la de ${CFG.LLUVIA_MIN_UTIL} mm o más, por un umbral simplificado del modelo) y sale una pérdida de ${CFG.ET_DIA} mm por evaporación y consumo de las plantas. Se asume que el suelo guarda como máximo ${CFG.RESERVA_MAX} mm y que el balance comienza en el primer registro del año con una reserva supuesta de ${Math.round(CFG.INICIO_PCT * 100)}%.`,
     `Niveles de cada punto de monitoreo: Normal desde ${CFG.CORTE_NORMAL}%, Atención desde ${CFG.CORTE_ATENCION}%, Alerta desde ${CFG.CORTE_ALERTA}% y Crítico por debajo (umbral orientativo, sin calibración local). Un punto necesita al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días y ${CFG.MIN_HISTORIAL_DIAS} días de registro en la temporada para evaluarse; si no, se muestra como "Datos insuficientes".`,
-    `Comunidades, municipios y departamento: pasan a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos con datos están en alerta o crítico, y nunca se muestran como Normal si tienen algún punto en alerta o crítico. Con menos de ${CFG.GRUPO_MIN_EVALUADOS} puntos con datos, un municipio o el departamento no pasa de Atención, aunque el punto afectado se nombra igual. Si a más del ${Math.round((1 - CFG.COBERTURA_MIN_GRUPO) * 100)}% de los puntos de un grupo le faltan datos, no se afirma que todo esté normal y se muestra como "Datos incompletos". El balance recorre todos los días desde el primer registro hasta la fecha de referencia. Un reporte de 0 mm indica ausencia de lluvia; un día sin reporte significa lluvia desconocida y se muestra Datos insuficientes, sin publicar un porcentaje ni clasificar el riesgo del punto.`,
+    `Comunidades, municipios y departamento: pasan a Alerta cuando ${CFG.UMBRAL_GRUPO}% o más de sus puntos con datos están en alerta o crítico, y nunca se muestran como Normal si tienen algún punto en alerta o crítico. Con menos de ${CFG.GRUPO_MIN_EVALUADOS} puntos con datos, un municipio o el departamento no pasa de Atención, aunque el punto afectado se nombra igual. Si a más del ${Math.round((1 - CFG.COBERTURA_MIN_GRUPO) * 100)}% de los puntos de un grupo le faltan datos, no se afirma que todo esté normal y se muestra como "Datos incompletos". El balance recorre todos los días desde el primer registro hasta la fecha de referencia. Un reporte de 0 mm indica ausencia de lluvia; un día sin reporte significa lluvia desconocida. Se calculan límites internos de reserva mínima y máxima; mientras sean diferentes se muestra Datos insuficientes, sin publicar porcentaje ni clasificar el punto. Registros posteriores pueden hacer coincidir ambos límites y permitir retomar la estimación. Los faltantes se informan para los últimos 7 días, separados del historial. Los días sin lluvia cuentan únicamente registros consecutivos de 0 mm hasta la fecha de referencia; se detienen ante cualquier día sin registro.`,
     `No se calcula cuántos días más durará la humedad, porque eso depende de la temperatura, del tipo de suelo y del cultivo, datos que no se tienen. Es una estimación de riesgo, no una medición de la humedad real. Estos valores son supuestos iniciales y deben validarse con personal agrónomo.`
   ];
   $('#metodo').innerHTML = parrafos.map(t => `<p>${esc(t)}</p>`).join('');
