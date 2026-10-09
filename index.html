@@ -52,6 +52,8 @@ h1,h2,h3,h4,p{margin:0}
 .hero-d{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
 .logos.sm img{height:36px}
 .logos img.blanco{filter:brightness(0) invert(1)}
+.logos img.usac{height:56px}.logos.sm img.usac{height:46px}
+@media(max-width:600px){.logos{flex-wrap:wrap}}
 .hero-centro{display:block;padding:26px 26px 24px}
 .hero-centro .logos{justify-content:flex-start;margin-bottom:14px}
 
@@ -202,7 +204,7 @@ footer p{margin-top:8px;max-width:80ch}
 <!-- ============ INICIO ============ -->
 <section id="pantallaInicio" class="pantalla" aria-labelledby="tInicio">
   <header class="hero hero-centro">
-    <div class="logos"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="logos"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"><img class="usac" src="usac-logo.png" alt="CUNORI USAC - Ingeniería en Gestión Ambiental" onerror="this.remove()"></div>
     <div class="eyebrow">Chiquimula · Monitoreo comunitario de lluvia</div>
     <h1 id="tInicio">Generador Analítico de Pluviometría</h1>
     <p id="inicioSub"></p>
@@ -237,7 +239,7 @@ footer p{margin-top:8px;max-width:80ch}
       <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
       <div><div class="eyebrow" id="comEyebrow">Vista comunitaria</div><h1 id="comTitulo">Mi comunidad</h1></div>
     </div>
-    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"><img class="usac" src="usac-logo.png" alt="CUNORI USAC - Ingeniería en Gestión Ambiental" onerror="this.remove()"></div>
     <div class="hero-r">
       <button class="btn verde" id="comPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Descargar PDF</button>
     </div></div>
@@ -283,7 +285,7 @@ footer p{margin-top:8px;max-width:80ch}
       <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
       <div><div class="eyebrow">Vista municipal y departamental</div><h1 id="munTitulo">Chiquimula</h1></div>
     </div>
-    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"></div>
+    <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img src="maga.png" alt="MAGA" onerror="this.remove()"><img class="usac" src="usac-logo.png" alt="CUNORI USAC - Ingeniería en Gestión Ambiental" onerror="this.remove()"></div>
     <div class="hero-r">
       <button class="btn" id="munXLS" type="button"><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Descargar Excel</button>
       <button class="btn verde" id="munPDF" type="button"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>Generar informe PDF</button>
@@ -1349,11 +1351,11 @@ async function exportarPDF(ctx){
   doc.setFillColor(15, 39, 66); doc.rect(0, 0, 210, 24, 'F');
   doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.text('Informe de lluvia - Chiquimula', M, 14);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.text('SIAP · Sistema de Información y Análisis Pluviométrico', M, 20);
-  const logos = (await Promise.all(['crs-logo.png', 'maga.png'].map(f => cargarLogo(f, f === 'crs-logo.png')))).filter(Boolean);
+  const logos = (await Promise.all(['crs-logo.png', 'maga.png', 'usac-logo.png'].map(f => cargarLogo(f, f === 'crs-logo.png')))).filter(Boolean);
   let xr = 210 - M;
   for (const lg of logos.slice().reverse()){
-    const hl = 14, w = hl * lg.w / lg.h;
-    try { xr -= w; doc.addImage(lg.data, 'PNG', xr, 5, w, hl); xr -= 4; } catch (e) {}
+    const hl = lg.w / lg.h > 3 ? 9 : 13, w = hl * lg.w / lg.h;
+    try { xr -= w; doc.addImage(lg.data, 'PNG', xr, (24 - hl) / 2, w, hl); xr -= 4; } catch (e) {}
   }
 
   const hoy = hoyGT() || toS(Date.now());
