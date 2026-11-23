@@ -143,6 +143,8 @@ h1,h2,h3,h4,p{margin:0}
 .mun-cul{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
 .mun-cul .cul-sel{margin-top:0}
 .mun-cul .semilla{margin-top:0}
+.ini-cul{margin-top:4px}
+.ini-cul.nota{margin-top:6px;font-size:13px;opacity:.85}
 .sel.c{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 @media (min-width:1000px){.sel.m7{grid-template-columns:1.2fr 1.5fr 1.5fr 1.2fr 1.3fr 1fr 1fr}}
 .fld select{text-overflow:ellipsis}
@@ -1558,26 +1560,43 @@ function renderInicio(){
   const repHoy = new Set(S.all.filter(r => r.fecha === S.ref).map(r => r.municipio)).size;
   const et = etiquetaUltimoDato();
   $('#inicioSub').textContent = `Último dato: ${et === fmt(S.ref) ? et : et + ' (' + fmt(S.ref) + ')'} · ${repHoy} de ${muns.length} ${plural(muns.length, 'municipio reportó', 'municipios reportaron')} ese día.`;
-  const enAlerta = muns.filter(m => m.g.k > 0);
-  if (enAlerta.length){
-    const peor = enAlerta.some(m => m.g.nCritico > 0) ? 'critico' : 'alerta';
-    setBanner($('#inicioAlerta'), peor,
-      `Al ${fmtC(S.ref)}: ${enAlerta.length} ${plural(enAlerta.length, 'municipio tiene', 'municipios tienen')} puntos en peligro o emergencia (tablero fenológico)`,
-      `${enAlerta.slice(0, 4).map(m => m.mun).join(', ')}${enAlerta.length > 4 ? ' y otros' : ''}. Entra al panel municipal para ver el detalle.${gDpto.nCos ? ` Además, ${gDpto.nCos} puntos ya terminaron el ciclo; ${gDpto.kCos} con poca lluvia en floración o llenado de grano.` : ''}`);
-  } else if (muns.every(m => fueraDeCampo(m.g.estado)) && muns.some(m => m.g.estado === 'cosechado')){
-    const nC = muns.reduce((a, m) => a + (m.g.nCos || 0), 0), kC = muns.reduce((a, m) => a + (m.g.kCos || 0), 0);
-    setBanner($('#inicioAlerta'), kC ? 'alerta' : 'cosechado', `Al ${fmtC(S.ref)}: ciclo terminado; ${kC} de ${nC} puntos con poca lluvia en floración o llenado de grano`,
-      kC ? 'No es una alerta activa: el cultivo ya se cosechó. Indica dónde es probable que la cosecha haya sido menor; sirve para estimar pérdidas y para la sala situacional de SAN.' : 'Los cultivos recibieron lluvia suficiente en floración y llenado de grano.');
-  } else if (muns.every(m => m.g.estado === 'sincultivo')){
-    setBanner($('#inicioAlerta'), 'sincultivo', 'Sin maíz ni frijol en campo', 'Según las fechas de siembra de referencia, ahora no hay cultivo en campo. El registro de lluvia continúa.');
-  } else if (muns.every(m => m.g.estado === 'sindatos' || fueraDeCampo(m.g.estado))){
-    setBanner($('#inicioAlerta'), 'sindatos', 'Datos insuficientes', 'Aún no hay suficientes reportes para calificar la etapa del cultivo.');
-  } else if (gDpto.parcial){
-    setBanner($('#inicioAlerta'), 'sindatos', `Al ${fmtC(S.ref)}: sin alertas en los puntos con datos, pero faltan datos`,
-      `${gDpto.n - gDpto.ev} de ${gDpto.n} puntos no tienen datos suficientes, así que no se puede asegurar que todo esté en vigilancia. Dónde faltan más: ${dondeFaltan(pts, false)}.`);
-  } else {
-    setBanner($('#inicioAlerta'), 'normal', `Al ${fmtC(S.ref)}: sin alertas por lluvia`, 'Ningún punto de monitoreo está en peligro ni en emergencia.');
-  }
+  // aviso: una línea por cultivo, cada una calculada solo con ese cultivo (igual que el panel municipal)
+  const lineas = Object.keys(SAT.CULTIVOS).map(cul => {
+    const ptsC = [...S.puntosCul[cul].values()], mC = filasMunicipios(ptsC), gC = estadoGrupo(ptsC, CFG.GRUPO_MIN_EVALUADOS);
+    const nom = SAT.CULTIVOS[cul].nombre, sem = `${cicloDe(cul).n.toLowerCase()}, ${cicloDe(cul).dias} días`;
+    const alerta = mC.filter(m => m.g.k > 0);
+    let estado, txt, conSemilla = true;
+    if (alerta.length){
+      estado = alerta.some(m => m.g.nCritico > 0) ? 'critico' : 'alerta';
+      txt = `${alerta.length} ${plural(alerta.length, 'municipio con', 'municipios con')} puntos en peligro o emergencia: ${alerta.slice(0, 4).map(m => m.mun).join(', ')}${alerta.length > 4 ? ' y otros' : ''}.`;
+      const nCos = ptsC.filter(p => p.estado === 'cosechado').length;
+      if (nCos) txt += ` En otros ${nCos} ${plural(nCos, 'punto', 'puntos')} ya terminó su ciclo.`;
+    } else if (mC.every(m => fueraDeCampo(m.g.estado)) && mC.some(m => m.g.estado === 'cosechado')){
+      const nC = mC.reduce((a, m) => a + (m.g.nCos || 0), 0), kC = mC.reduce((a, m) => a + (m.g.kCos || 0), 0);
+      estado = 'cosechado';
+      txt = `ya terminó su ciclo. ${kC ? `${kC} de ${nC} puntos tuvieron poca lluvia cuando florecía y llenaba el grano: ahí la cosecha pudo ser menor.` : 'Tuvo lluvia suficiente cuando florecía y llenaba el grano.'}`;
+    } else if (mC.every(m => fueraDeCampo(m.g.estado))){
+      estado = 'sincultivo'; txt = 'ahora no está en campo.'; conSemilla = false;
+    } else if (mC.every(m => m.g.estado === 'sindatos' || fueraDeCampo(m.g.estado))){
+      estado = 'sindatos'; txt = 'faltan reportes para calificar la etapa del cultivo.';
+    } else if (gC.parcial){
+      estado = 'sindatos'; txt = `ningún punto con datos está en peligro ni emergencia, pero ${gC.n - gC.ev} de ${gC.n} puntos no tienen datos suficientes.`;
+    } else {
+      estado = gC.estado === 'atencion' ? 'atencion' : 'normal';
+      txt = estado === 'atencion' ? 'sin peligro ni emergencia; hay puntos en prevención.' : 'sin peligro ni emergencia.';
+    }
+    return { cul, nom, estado, n: alerta.length, html: `<b>${esc(nom)}${conSemilla ? ` (${esc(sem)})` : ''}:</b> ${esc(txt)}` };
+  });
+  const enAlerta = lineas.filter(l => l.estado === 'alerta' || l.estado === 'critico');
+  const peor = lineas.slice().sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado])[0].estado;
+  const titulo = enAlerta.length === 1 ? `Al ${fmtC(S.ref)}: ${enAlerta[0].nom.toLowerCase()} con puntos en peligro o emergencia en ${enAlerta[0].n} ${plural(enAlerta[0].n, 'municipio', 'municipios')}`
+    : enAlerta.length > 1 ? `Al ${fmtC(S.ref)}: ${enAlerta.map(l => l.nom.toLowerCase()).join(' y ')} con puntos en peligro o emergencia`
+    : lineas.every(l => l.estado === 'sincultivo') ? `Al ${fmtC(S.ref)}: no hay maíz ni frijol en campo`
+    : lineas.every(l => l.estado === 'normal' || l.estado === 'sincultivo') ? `Al ${fmtC(S.ref)}: sin alertas por lluvia`
+    : `Al ${fmtC(S.ref)}: así están los cultivos`;
+  setBanner($('#inicioAlerta'), peor, titulo, '');
+  $('#inicioAlerta .bd').innerHTML = lineas.slice().sort((a, b) => ORDEN[a.estado] - ORDEN[b.estado]).map(l => `<div class="ini-cul">${l.html}</div>`).join('') +
+    `<div class="ini-cul nota">${enAlerta.length ? 'Entra al panel municipal para ver el detalle. ' : ''}Cada cultivo se calcula por separado, con la semilla elegida en este equipo.</div>`;
   // tendencia: lluvia promedio acumulada de los últimos 30 días
   const desde = toS(toT(S.ref) - 29 * DAY);
   const s = serieDiaria(S.all.filter(r => r.fecha >= desde));
