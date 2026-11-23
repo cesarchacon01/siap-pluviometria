@@ -2233,7 +2233,8 @@ async function exportarPDF(ctx){
     const ls = doc.splitTextToSize(String(t), W), h = lh(size, ls.length);
     salto(h); doc.text(ls, M, y + size * 0.32); y += h + gap;
   };
-  const titulo = t => { salto(14); txt(t, 11.5, true, [15,39,66], 1.5); };
+  // un título nunca queda solo al final de la página: reserva espacio para lo que viene debajo (sig, en mm)
+  const titulo = (t, sig = 30) => { salto(14 + sig); txt(t, 11.5, true, [15,39,66], 1.5); };
 
   // encabezado con logos (el de CRS en blanco)
   doc.setFillColor(15, 39, 66); doc.rect(0, 0, 210, 24, 'F');
@@ -2282,7 +2283,7 @@ async function exportarPDF(ctx){
   y += bh + 5;
 
   // 2. qué hacer
-  if (ctx.accion){ txt('Qué hacer', 11.5, true, pc.fg, 1); txt(ctx.accion, 10.5, false, [52,64,84], 5); }
+  if (ctx.accion){ salto(24); txt('Qué hacer', 11.5, true, pc.fg, 1); txt(ctx.accion, 10.5, false, [52,64,84], 5); }
 
   // 3. números clave
   if (ctx.kpis && ctx.kpis.length){
@@ -2301,7 +2302,7 @@ async function exportarPDF(ctx){
 
   // 3b. tablero fenológico
   if (ctx.tablero && ctx.tablero.length){
-    titulo('Tablero fenológico');
+    titulo('Tablero fenológico', 34);
     txt('Lluvia registrada en cada etapa comparada con la que necesita el cultivo (rotafolio SAT).', 8.5, false, [102,112,133], 2);
     const notaVal = NOTA_VALIDACION;
     const XT = [M, M + 18, M + 62, M + 104, M + 130, M + 156];
@@ -2327,7 +2328,7 @@ async function exportarPDF(ctx){
 
   // 4. gráfica (la misma del visor) con su explicación
   if (ctx.serie && ctx.serie.fechas.length){
-    titulo('Lluvia diaria y acumulada');
+    titulo('Lluvia diaria y acumulada', 78);
     txt(rangoL(ctx.serie.fechas[0], ctx.serie.fechas[ctx.serie.fechas.length - 1]).replace(/^./, c => c.toUpperCase()), 8.5, false, [102,112,133], 2);
     salto(70);
     dibujarGrafica(doc, ctx.serie, M, y, W, 58);
@@ -2350,8 +2351,7 @@ async function exportarPDF(ctx){
 
   // 6. línea de tiempo por mes
   if (ctx.serie && ctx.serie.fechas.length){
-    salto(40);
-    titulo('Línea de tiempo de lluvia');
+    titulo('Línea de tiempo de lluvia', 26);
     y += 3;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(102, 112, 133);
     doc.setFillColor(20, 132, 92); doc.rect(M + 1, y - 2.2, 2.4, 2.4, 'F'); doc.text('Llovió', M + 5, y);
@@ -2415,8 +2415,7 @@ async function exportarPDF(ctx){
   }
 
   // 8. cómo entender los estados
-  salto(52);
-  titulo('Cómo entender los niveles');
+  titulo('Cómo entender los niveles', 44);
   y += 4;
   Object.keys(SIGNIFICADO).forEach(k => {
     const c = PDF_COL[k];
