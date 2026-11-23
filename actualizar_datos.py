@@ -260,8 +260,11 @@ if os.path.exists(ARCHIVO_MANUAL):
                 catalogo[normalizar_clave(punto_texto(m, co, ca, inf))] = (m, co, ca, inf)
         claves_kobo = {(normalizar_clave(d["municipio"]), normalizar_clave(d["comunidad"]),
                         normalizar_clave(d["caserio"]), normalizar_clave(d["responsable"]), d["fecha"]) for d in datos}
-        agregados, repetidos, invalidos, vistos = 0, 0, [], set()
-        for n, fila in enumerate(hojas.get("Registros", [])[1:], start=2):
+        agregados, repetidos, corregidos, invalidos, vistos = 0, 0, 0, [], set()
+        filas = list(enumerate(hojas.get("Registros", [])[1:], start=2))
+        # los "Estimado" van al final: cualquier dato real (de Kobo o del Excel) para ese día les gana
+        filas.sort(key=lambda t: normalizar_clave(str((t[1] + [None] * 4)[3] or "")).startswith("estimad"))
+        for n, fila in filas:
             fila = (fila + [None] * 5)[:5]
             if not any(x not in (None, "") for x in fila[:3]):
                 continue                                   # fila vacía
@@ -276,15 +279,29 @@ if os.path.exists(ARCHIVO_MANUAL):
                 continue
             m, co, ca, inf = punto
             clave = (normalizar_clave(m), normalizar_clave(co), normalizar_clave(ca), normalizar_clave(inf), fecha)
-            if clave in claves_kobo or clave in vistos:
-                repetidos += 1                             # ya está en Kobo (o repetido en el Excel): vale el primero
+            fuente = str(fila[3] or "Carga manual").strip()
+            if clave in vistos:
+                repetidos += 1                             # repetido en el Excel: vale el primero
+                continue
+            if clave in claves_kobo:
+                if normalizar_clave(fuente).startswith("correcc"):
+                    # "Corrección": el dato revisado reemplaza al de Kobo (por ejemplo, un dato corrido un día)
+                    for d in datos:
+                        if (normalizar_clave(d["municipio"]), normalizar_clave(d["comunidad"]), normalizar_clave(d["caserio"]),
+                                normalizar_clave(d["responsable"]), d["fecha"]) == clave:
+                            d["mm_kobo"], d["mm"], d["fuente"] = d["mm"], mm, fuente
+                    vistos.add(clave)
+                    corregidos += 1
+                else:
+                    repetidos += 1                         # ya está en Kobo: se conserva Kobo
                 continue
             vistos.add(clave)
             datos.append({"municipio": m, "comunidad": co, "caserio": ca, "responsable": inf,
-                          "fecha": fecha, "mm": mm, "fuente": str(fila[3] or "Carga manual").strip()})
+                          "fecha": fecha, "mm": mm, "fuente": fuente})
             agregados += 1
         print(f"Cargas manuales: {agregados} registros agregados desde {ARCHIVO_MANUAL}; "
-              f"{repetidos} ya estaban en Kobo o repetidos (se conserva Kobo).")
+              f"{repetidos} ya estaban en Kobo o repetidos (se conserva Kobo); "
+              f"{corregidos} datos de Kobo corregidos (fuente 'Corrección').")
         if invalidos:
             print(f"AVISO: {len(invalidos)} filas del Excel no se cargaron por fecha, punto o lluvia no válidos. "
                   f"Filas: {', '.join(map(str, invalidos[:50]))}{' ...' if len(invalidos) > 50 else ''}")
