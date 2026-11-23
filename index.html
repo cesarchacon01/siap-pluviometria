@@ -797,7 +797,7 @@ function estadoGrupo(todos, minEv = 1){
   if (!n){
     const cos = todos.filter(p => p.estado === 'cosechado').sort((a, b) => ORDEN[a.resultado] - ORDEN[b.resultado]);
     base.estado = cos.length ? 'cosechado' : 'sincultivo'; base.peor = cos[0] || todos[0] || null;
-    base.motivo = cos.length ? `${base.kCos} de ${cos.length} ${plural(cos.length, 'punto tuvo', 'puntos tuvieron')} Peligro o Emergencia en floración o llenado de grano` : todos.length ? 'Según las fechas de siembra de referencia, ahora no hay maíz ni frijol en campo' : '';
+    base.motivo = cos.length ? `${base.kCos} de ${cos.length} ${plural(cos.length, 'punto tuvo', 'puntos tuvieron')} Peligro o Emergencia en floración o llenado de grano` : todos.length ? todos[0].motivo : '';
     return base;
   }
   base.peor = pts.slice().sort(cmpRiesgo)[0];
@@ -1592,40 +1592,61 @@ function renderInicio(){
 
 /* =========================== COMUNITARIO =========================== */
 function mensajeComunidad(g, l){
+  // Mensaje del aviso comunitario: frases cortas y en lenguaje sencillo, de un solo cultivo
   const p = g.peor, c = p && p.principal, e = etapaEval(c), cur = etapaActual(c);
-  const varios = g.n > 1 ? ` Es el punto más afectado de la comunidad (${p.caserio || p.comunidad}).` : '';
+  const varios = g.n > 1 && p ? ` (Se muestra el punto más afectado de la comunidad: ${p.caserio || p.comunidad}.)` : '';
   if (g.estado === 'cosechado' && p && p.cosecha){
-    const res = p.resultado, malo = res === 'alerta' || res === 'critico';
-    return [`Ciclo del ${p.cosecha.nombre.toLowerCase()} terminado (${fmtC(p.cosecha.etapas[p.cosecha.etapas.length - 1].fin)})`,
-      `${resumenCiclo(p.cosecha)} En floración y llenado de grano tuvo ${LABEL[res] ? LABEL[res].toLowerCase() : 'datos incompletos'}${malo ? ': es probable que la cosecha haya sido menor.' : '.'} Esto ya no es una alerta: el cultivo se cosechó.${varios}`];
+    const res = p.resultado, malo = res === 'alerta' || res === 'critico', cul = p.cosecha.nombre.toLowerCase();
+    const como = malo ? 'Le faltó agua cuando florecía y llenaba el grano: es probable que la cosecha haya sido menor.'
+      : res === 'atencion' ? 'Le faltó un poco de agua cuando florecía y llenaba el grano.'
+      : res === 'normal' ? 'Tuvo agua suficiente cuando florecía y llenaba el grano.'
+      : 'Faltan datos de cuando florecía y llenaba el grano para saber cómo le fue.';
+    return [`El ${cul} ya terminó su ciclo (${fmtC(p.cosecha.etapas[p.cosecha.etapas.length - 1].fin)})`,
+      `${como} Ya no es una alerta: el ${cul} se cosechó.${varios}`];
   }
-  if (g.estado === 'sincultivo') return ['Sin maíz ni frijol en campo', 'Según las fechas de siembra de referencia del municipio, ahora no hay cultivo en campo. Sigue registrando la lluvia: servirá para la próxima siembra.'];
+  if (g.estado === 'sincultivo'){
+    const cul = p && p.cultivos && p.cultivos.length === 1 ? p.cultivos[0].nombre.toLowerCase() : 'maíz ni frijol';
+    return [`Ahora no hay ${cul} en campo`, 'Según la fecha de siembra más común del municipio, el cultivo todavía no se siembra o ya se cosechó. Siga midiendo la lluvia: servirá para la próxima siembra.'];
+  }
   if (g.estado === 'sindatos'){
-    return ['Pocos datos para calificar la etapa del cultivo', g.tipoMotivo === 'faltantes'
-      ? `${g.motivo}. Qué hacer: pide al observador que envíe el dato ${g.motivo.startsWith('Falta el registro') ? 'de ese día' : 'de los días que faltan'}.`
-      : `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días. Qué hacer: pide al observador que envíe su registro todos los días.`];
+    return ['Faltan datos de lluvia para dar el aviso', g.tipoMotivo === 'faltantes'
+      ? `${g.motivo}. Qué hacer: pida al observador que envíe el dato ${g.motivo.startsWith('Falta el registro') ? 'de ese día' : 'de los días que faltan'}.`
+      : `${g.motivo ? g.motivo + '. ' : ''}Se necesitan al menos ${CFG.MIN_REPORTES_7D} reportes en los últimos 7 días. Qué hacer: pida al observador que envíe su registro todos los días.`];
   }
   if (!e) return [LABEL[g.estado], ''];
-  const cul = c.nombre.toLowerCase(), etapa = e.n.toLowerCase();
-  const titulo = c.usaAnterior ? `${LABEL[g.estado]}: ${c.nombre}, la etapa de ${etapa} ${g.estado === 'normal' ? 'terminó con lluvia suficiente' : 'terminó con poca lluvia'}` : `${LABEL[g.estado]}: ${c.nombre} en ${cur.n.toLowerCase()}`;
-  let det = c.usaAnterior ? porQueAnterior(c) + ': ' : '';
-  const periodo = e.enCurso ? `del ${fmtC(e.ini)} al ${fmtC(S.ref)}` : `del ${fmtC(e.ini)} al ${fmtC(e.fin)}`;
+  const cul = c.nombre.toLowerCase(), etapa = e.n.toLowerCase(), est = g.estado, paso = !e.enCurso;
+  const fechas = `del ${fmtL(e.ini)} al ${fmtL(e.enCurso ? S.ref : e.fin)}`;
+  let titulo, det;
   if (e.inv){
-    det += `${c.usaAnterior ? periodo : `en la cosecha en seco (${periodo})`} llovieron ${nf(e.mm, 0)} mm. ` + ({
-      normal: 'Es poca lluvia, lo que conviene para cosechar y secar el grano.',
-      atencion: `Conviene que no pase de ${e.l[0]} mm: hay que estar pendientes para cosechar y secar el grano a tiempo.`,
-      alerta: 'Está lloviendo más de lo conveniente para la cosecha: hay riesgo de que el grano se dañe por la humedad.',
-      critico: 'Llueve mucho para la cosecha: hay riesgo alto de que el grano se dañe por la humedad.'
-    })[g.estado];
+    titulo = `${LABEL[est]}: ` + ({
+      normal: `tiempo seco, bueno para cosechar el ${cul}`,
+      atencion: `está lloviendo en la cosecha del ${cul}`,
+      alerta: `mucha lluvia en la cosecha del ${cul}`,
+      critico: `demasiada lluvia en la cosecha del ${cul}`
+    })[est];
+    det = `Llovieron ${nf(e.mm, 0)} mm ${fechas}${est === 'normal' ? '' : `; para cosechar en seco conviene que no pase de ${e.l[0]} mm`}. ` + ({
+      normal: 'Es buen momento para cosechar y secar el grano.',
+      atencion: 'Esté pendiente para cosechar y secar el grano a tiempo.',
+      alerta: 'El grano se puede dañar por la humedad: coseche y seque el grano bajo techo.',
+      critico: 'Hay mucho riesgo de que el grano se dañe por la humedad: coseche y seque el grano bajo techo.'
+    })[est];
   } else {
-    det += `${c.usaAnterior ? periodo : `en la etapa de ${etapa} (${periodo})`} llovieron ${nf(e.mm, 0)} mm; para ir bien, el ${cul} necesita más de ${e.necesita} mm${e.enCurso ? ' a esta fecha' : ' en esa etapa'}. ` + ({
-      normal: 'La lluvia es suficiente para esta etapa.',
-      atencion: 'Llovió algo menos de lo que necesita el cultivo; conviene vigilar.',
-      alerta: `Llovió poco para lo que necesita el cultivo en ${e.enCurso ? 'esta' : 'esa'} etapa; el rendimiento puede bajar.`,
-      critico: `Llovió muy poco para lo que necesita el cultivo en ${e.enCurso ? 'esta' : 'esa'} etapa; hay riesgo de pérdida de la cosecha.`
-    })[g.estado];
+    titulo = `${LABEL[est]}: el ${cul} ` + ({
+      normal: `${paso ? 'recibió' : 'está recibiendo'} lluvia suficiente`,
+      atencion: `${paso ? 'recibió' : 'está recibiendo'} un poco menos de lluvia de la que necesita`,
+      alerta: `${paso ? 'recibió' : 'está recibiendo'} poca lluvia`,
+      critico: `${paso ? 'recibió' : 'está recibiendo'} muy poca lluvia`
+    })[est] + ` en ${etapa}`;
+    det = `${paso ? 'Llovieron' : 'Van'} ${nf(e.mm, 0)} mm ${fechas}; ${paso ? 'necesitaba' : 'a esta fecha necesita'} más de ${e.necesita} mm. ` + ({
+      normal: `La lluvia ${paso ? 'alcanzó' : 'alcanza'} para esta etapa.`,
+      atencion: paso ? 'Le faltó un poco de agua: conviene vigilar.' : 'Le falta un poco de agua: conviene vigilar.',
+      alerta: paso ? 'Le faltó agua: la cosecha puede ser menor.' : 'Le falta agua: la cosecha puede ser menor.',
+      critico: paso ? 'Le faltó mucha agua: hay riesgo de perder la cosecha.' : 'Le falta mucha agua: hay riesgo de perder la cosecha.'
+    })[est];
   }
-  det = det.charAt(0).toUpperCase() + det.slice(1);
+  if (c.usaAnterior && cur) det += cur.info
+    ? ` Ahora el ${cul} está en ${cur.n.toLowerCase()}: el grano se está secando y la falta de lluvia ya no le hace daño.`
+    : ` Ahora el ${cul} empieza la etapa de ${cur.n.toLowerCase()}; el aviso cambiará cuando esa etapa avance.`;
   return [titulo, det + varios];
 }
 
@@ -1653,7 +1674,16 @@ function renderComunitario(){
   const rg = rangoPeriodo(C.per);
   const base = { mun:C.mun, com:C.com, cas:C.cas, inf:C.inf };
   const fl = { ...base, desde:rg.desde, hasta:rg.hasta };
-  const rows = filtrar(fl), pts = puntosDe(base), g = estadoGrupo(pts);
+  // el aviso se calcula con un solo cultivo: el que se está viendo en "¿Qué le pasó a tu...?"
+  const gTodos = estadoGrupo(puntosDe(base)), pTodos = gTodos.peor;
+  let culCom = SAT.CULTIVOS[C.cul] ? C.cul : '';
+  if (!culCom && pTodos && pTodos.cultivos){
+    const disp = pTodos.cultivos.filter(x => x.fase !== 'antes');
+    const c0 = (pTodos.principal && disp.includes(pTodos.principal) && pTodos.principal) || (pTodos.cosecha && disp.includes(pTodos.cosecha) && pTodos.cosecha) || disp[disp.length - 1];
+    culCom = c0 ? c0.cul : '';
+  }
+  if (!culCom) culCom = Object.keys(SAT.CULTIVOS)[0];
+  const rows = filtrar(fl), pts = puntosDe({ ...base, cul: culCom }), g = estadoGrupo(pts);
   const nombre = C.cas ? `${C.com} · ${C.cas}` : C.com;
   $('#comTitulo').textContent = nombre;
   $('#comEyebrow').textContent = `${C.mun} · Vista comunitaria`;
@@ -1664,11 +1694,11 @@ function renderComunitario(){
   $('#comTablero').innerHTML = `<details class="tab-pleg"><summary><span>Ver el tablero del SAT</span><small>Para COLRED, promotores y técnicos: fechas de cada etapa y rangos del rotafolio</small></summary>` + tableroHTML(g.peor) + (g.n > 1 && g.peor ? `<p class="nota" style="margin-top:10px">Se muestra el punto más afectado de la comunidad: ${esc(g.peor.caserio || g.peor.comunidad)} (${esc(g.peor.responsable)}). Elige un caserío para ver otro.</p>` : '') + '</details>';
   if (tabAbierto) $('#comTablero details').open = true;
   $('#comAcciones').innerHTML = accionesHTML(g.estado, 'comunidad', esCosecha(g.peor));
-  $('#comHistoria').innerHTML = historiaHTML(g.peor, C.cul);
+  $('#comHistoria').innerHTML = historiaHTML((g.peor && S.puntos.get(g.peor.key)) || pTodos, culCom);
   $('#comPron').innerHTML = pronosticoHTML(g.peor);
   $('#comPron').hidden = !$('#comPron').innerHTML;
   $('#comHistoria').hidden = !$('#comHistoria').innerHTML;
-  $('#comNota').textContent = `Último día con datos: ${fmt(S.ref)}. El registro de las 7 am corresponde a la lluvia del día anterior. El nivel compara la lluvia de cada etapa del maíz y del frijol con la que necesitan, según el rotafolio SAT y una fecha de siembra de referencia del municipio.${g.n > 1 ? ` Resumen de ${g.n} puntos de monitoreo de la comunidad; elige un caserío para verlo por separado.` : ''}${C.inf ? ` Gráfica y números con los registros de ${C.inf}; el nivel de alerta es del punto de monitoreo.` : ''}`;
+  $('#comNota').textContent = `Último día con datos: ${fmt(S.ref)}. La lectura de las 7 am es la lluvia del día anterior. El aviso compara la lluvia que cayó en cada etapa del ${SAT.CULTIVOS[culCom].nombre.toLowerCase()} con la que necesita (rotafolio SAT), contando desde la fecha de siembra más común del municipio.${g.n > 1 ? ` Esta comunidad tiene ${g.n} puntos de monitoreo; elija un caserío para ver cada uno.` : ''}${C.inf ? ` Gráfica y números con los registros de ${C.inf}; el nivel de alerta es del punto de monitoreo.` : ''}`;
 
   const inicioC = inicioLluvias(base);
   const s = serieDiaria(rows, rg.hasta), r = resumenSerie(s, rows, inicioC);
@@ -1706,7 +1736,7 @@ function lecturaPeriodo(s, r, g, nombre, pts, ay){
   // 1. situación actual
   let sit;
   if (g.estado === 'cosechado') sit = `El ciclo terminó en ${nombre}. ${g.motivo}; ahí es probable que la cosecha haya sido menor.`;
-  else if (g.estado === 'sincultivo') sit = `Según las fechas de siembra de referencia, ahora no hay maíz ni frijol en campo en ${nombre}.`;
+  else if (g.estado === 'sincultivo') sit = `${g.motivo || 'Según las fechas de siembra de referencia, ahora no hay cultivo en campo'} en ${nombre}.`;
   else if (g.estado === 'sindatos') sit = `Todavía no hay suficientes reportes para calificar la etapa del cultivo en ${uno ? 'el punto' : 'los puntos'} de monitoreo de ${nombre}.`;
   else if (uno){
     const p = pts[0];
