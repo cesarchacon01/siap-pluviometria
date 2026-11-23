@@ -84,7 +84,7 @@ h1,h2,h3,h4,p{margin:0}
 .hist-mm{font-size:12px;color:var(--muted)}
 .hist-mm small{display:block;font-size:11px;font-style:italic;margin-top:2px}
 .hist-cal{width:100%;box-sizing:border-box;border-radius:8px;padding:3px 4px;font-size:11px;line-height:1.3;color:#475467;background:#eef1f4}
-.hist-cal b{display:block;font-size:12px;font-weight:700;color:#1d2433}
+.hist-cal b{display:block;font-size:12px;font-weight:700;color:#1d2433;white-space:nowrap}
 .hist-cal.pas{background:#e3f2e7;color:#2f6b45}.hist-cal.pas b{color:#1e5634}
 .hist-cal.cur{background:#fff;box-shadow:inset 0 0 0 1.5px var(--navy);color:#1d2433}
 .hist-cal.fut{background:transparent;box-shadow:inset 0 0 0 1px #b8c2cc}
@@ -1302,7 +1302,8 @@ function rangoDiasEtapa(cul, i){
   });
   return [Math.min(...ds), Math.max(...ds)];
 }
-const fmtRango = (ini, fin) => ini.slice(0, 7) === fin.slice(0, 7) ? `${+ini.slice(8, 10)}–${fmtC(fin)}` : `${fmtC(ini)}–${fmtC(fin)}`;
+const fmtDe = s => `${+s.slice(8, 10)} de ${MESES[+s.slice(5, 7) - 1]}`;
+const fmtRango = (ini, fin) => ini.slice(0, 7) === fin.slice(0, 7) ? `Del ${+ini.slice(8, 10)} al ${fmtDe(fin)}` : `${fmtC(ini)} al ${fmtC(fin)}`;
 function historiaHTML(p, culSel){
   if (!p || !p.cultivos) return '';
   const disponibles = p.cultivos.filter(c => c.fase !== 'antes');
@@ -1320,10 +1321,10 @@ function historiaHTML(p, culSel){
       : e.info ? `Llovieron ${nf(e.mm, 0)} de ${e.necesita} mm` : `Recibió ${nf(e.mm, 0)} de ${e.necesita} mm`;
     // etapa en curso: la cifra es lo que necesitaba hasta hoy; se aclara el día y el total de la etapa
     const enCursoTxt = !futura && e.enCurso && !e.inv ? `<small>${Math.round(e.l[2])} mm en toda la etapa</small>` : '';
-    // franja de calendario: fechas de la etapa con la siembra de referencia y la semilla elegida; entre paréntesis, días con otras semillas
-    const [dMin, dMax] = rangoDiasEtapa(c.cul, i), rango = dMin === dMax ? '' : ` (${dMin}–${dMax})`;
-    const cal = `<div class="hist-cal ${e.enCurso ? 'cur' : futura ? 'fut' : 'pas'}"><b>${fmtRango(e.ini, e.fin)}</b>${e.enCurso
-      ? `día ${e.trans} de ${e.dias}${rango}<span class="av"><i style="width:${Math.round(e.trans / e.dias * 100)}%"></i></span>` : `${e.dias} días${rango}`}</div>`;
+    // franja de calendario: fechas con la siembra de referencia y la semilla elegida; la duración, en rango según las semillas del cultivo
+    const [dMin, dMax] = rangoDiasEtapa(c.cul, i), dura = dMin === dMax ? `${dMin} días` : `de ${dMin} a ${dMax} días`;
+    const cal = `<div class="hist-cal ${e.enCurso ? 'cur' : futura ? 'fut' : 'pas'}"><b>${futura ? `Empieza el ${fmtDe(e.ini)}` : fmtRango(e.ini, e.fin)}</b>${e.enCurso
+      ? `Día ${e.trans} · dura ${dura}<span class="av"><i style="width:${Math.round(e.trans / e.dias * 100)}%"></i></span>` : `Dura ${dura}`}</div>`;
     return `<div class="hist-et${e.enCurso ? ' hoy' : ''}${futura ? ' fut' : ''}">
       ${e.enCurso ? '<span class="hist-hoy">Ahora</span>' : ''}
       ${cal}
@@ -1338,7 +1339,7 @@ function historiaHTML(p, culSel){
     <p class="hist-fechas">Siembra de referencia: <b>${fmtL(c.siembra)}</b> (${c.deMunicipio ? `la más común en ${esc(p.municipio)}` : "la más común en el departamento"}) · Cosecha estimada: <b>${fmtL(toS(toT(c.siembra) + c.ciclo.dias * DAY))}</b> (${esc(c.ciclo.n.toLowerCase())}, ${c.ciclo.dias} días)</p>
     <p class="hist-res">${esc(resumenCiclo(c))}</p>
     <div class="hist" role="img" aria-label="${esc(resumenCiclo(c))}">${celdas}</div>
-    <div class="hist-ley">${['normal', 'atencion', 'alerta', 'critico'].map(k => `<span>${caraSVG(k, 20)} ${esc(PALABRA[k])}</span>`).join('')}<span>(${rangoDiasEtapa(c.cul, 1).join('–')}) = días que puede durar la etapa según la semilla</span></div>`;
+    <div class="hist-ley">${['normal', 'atencion', 'alerta', 'critico'].map(k => `<span>${caraSVG(k, 20)} ${esc(PALABRA[k])}</span>`).join('')}</div>`;
 }
 
 /* ---------- Pronóstico de lluvia (Open-Meteo, 16 días) ----------
