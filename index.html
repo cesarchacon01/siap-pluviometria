@@ -162,6 +162,18 @@ h1,h2,h3,h4,p{margin:0}
 .ini-cul{margin-top:4px}
 .ini-cul.nota{margin-top:6px;font-size:13px;opacity:.85}
 .sel.c{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+/* Panel comunitario: "¿De qué lugar…?" más visible */
+.lugar{border:2px solid var(--green);background:#f1f8f4;border-radius:14px;padding:14px 16px}
+.lugar-t{display:flex;align-items:center;gap:8px;font-size:16.5px;font-weight:800;color:#0b5a3c;margin:0 0 12px}
+.lugar-t .i{width:22px;height:22px}
+.lugar .fld label{display:flex;align-items:center;gap:7px;font-size:13.5px;color:#1d2433}
+.lugar .paso{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:800;flex:none}
+.lugar .fld select{min-height:46px;font-size:15.5px;border:1.5px solid #8fb9a5;border-radius:11px}
+.lugar #comMun,.lugar #comCom{border-color:var(--green);box-shadow:0 0 0 3px rgba(20,132,92,.13);font-weight:700}
+.lugar .fld select:disabled{background:#fff;color:var(--ink);border-style:dashed}
+.lugar .ayuda{font-size:12.5px;color:#5b6b63;margin-top:4px;min-height:1em}
+.lugar-per{margin-top:14px}
+.lugar .sel{align-items:start}
 @media (min-width:1000px){.sel.m7{grid-template-columns:1.2fr 1.5fr 1.5fr 1.2fr 1.3fr 1fr 1fr}}
 .fld select{text-overflow:ellipsis}
 .fld select:disabled{background:#f4f6f8;color:#344054;opacity:1;cursor:default}
@@ -277,6 +289,7 @@ footer p{margin-top:8px;max-width:80ch}
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12h14M5 12l6 6M5 12l6-6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.4"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></symbol>
@@ -351,12 +364,17 @@ footer p{margin-top:8px;max-width:80ch}
     </div></div>
   </header>
   <div class="stack">
-    <div class="card sel c">
-      <div class="fld"><label for="comMun">Municipio</label><select id="comMun"></select></div>
-      <div class="fld"><label for="comCom">Mi comunidad</label><select id="comCom"></select></div>
-      <div class="fld"><label for="comCas">Caserío</label><select id="comCas"></select></div>
-      <div class="fld"><label for="comInf">Informante</label><select id="comInf"></select></div>
-      <div class="fld per"><label id="lblPer">Período de la gráfica</label>
+    <div class="card">
+      <div class="lugar">
+        <p class="lugar-t"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>¿De qué lugar quieres ver la lluvia?</p>
+        <div class="sel c">
+          <div class="fld"><label for="comMun"><span class="paso">1</span>Municipio</label><select id="comMun"></select></div>
+          <div class="fld"><label for="comCom"><span class="paso">2</span>Mi comunidad</label><select id="comCom"></select></div>
+          <div class="fld"><label for="comCas"><span class="paso">3</span>Caserío</label><select id="comCas"></select><div class="ayuda" id="ayCas"></div></div>
+          <div class="fld"><label for="comInf"><span class="paso">4</span>Quién mide la lluvia</label><select id="comInf"></select><div class="ayuda" id="ayInf"></div></div>
+        </div>
+      </div>
+      <div class="fld per lugar-per"><label id="lblPer">Período de la gráfica</label>
         <div class="chips" id="comChips" role="group" aria-labelledby="lblPer">
           <button type="button" data-p="todo" aria-pressed="true">Todo el registro</button>
           <button type="button" data-p="30" aria-pressed="false">Últimos 30 días</button>
@@ -1757,8 +1775,10 @@ function renderComunitario(){
   if (cass.length > 1){ C.cas = llenar(selCas, cass, 'Todos los caseríos', C.cas); selCas.disabled = false; }
   else { C.cas = ''; llenar(selCas, cass.length ? cass : ['Sin caserío'], null, cass[0] || ''); selCas.disabled = true; }
   const infs = uniq(S.all.filter(r => r.municipio === C.mun && r.comunidad === C.com && (!C.cas || r.caserio === C.cas)).map(r => r.responsable));
-  if (infs.length > 1){ C.inf = llenar(selInf, infs, 'Todos los informantes', C.inf); selInf.disabled = false; }
+  if (infs.length > 1){ C.inf = llenar(selInf, infs, 'Todos los observadores', C.inf); selInf.disabled = false; }
   else { C.inf = ''; llenar(selInf, infs.length ? infs : ['Sin informante'], null, infs[0] || ''); selInf.disabled = true; }
+  $('#ayCas').textContent = cass.length > 1 ? `${cass.length} caseríos: elige uno o mira todos` : 'Solo hay uno en esta comunidad';
+  $('#ayInf').textContent = infs.length > 1 ? `${infs.length} observadores: elige uno o mira todos` : 'Observador del punto';
   $$('#comChips button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === C.per)));
 
   const rg = rangoPeriodo(C.per);
