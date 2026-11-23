@@ -116,6 +116,10 @@ h1,h2,h3,h4,p{margin:0}
 @media(max-width:600px){.logos{flex-wrap:wrap}}
 .hero-centro{display:block;padding:26px 26px 24px}
 .hero-centro .logos{justify-content:flex-start;margin-bottom:14px}
+.hero-centro{position:relative;overflow:hidden}
+.hero-centro>:not(.hero-paisaje){position:relative;z-index:1}
+.hero-paisaje{position:absolute;right:0;bottom:0;width:min(60%,640px);height:100%;pointer-events:none}
+@media (max-width:700px){.hero-paisaje{width:100%;height:46%;opacity:.55}}
 
 .btn{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:11px;padding:10px 15px;font-family:inherit;font-size:13.5px;font-weight:700;line-height:1;cursor:pointer;background:#fff;color:var(--navy);text-decoration:none}
 .btn:hover{filter:brightness(.96)}
@@ -273,6 +277,20 @@ footer p{margin-top:8px;max-width:80ch}
     <div class="eyebrow">Chiquimula · Monitoreo comunitario de lluvia</div>
     <h1 id="tInicio">Generador Analítico de Pluviometría</h1>
     <p id="inicioSub"></p>
+  <svg class="hero-paisaje" viewBox="0 0 640 220" preserveAspectRatio="xMaxYMax meet" aria-hidden="true" focusable="false">
+      <g fill="#85b7eb" opacity=".32"><rect x="150" y="14" width="2.4" height="13" rx="1.2" transform="rotate(14 150 14)"/><rect x="200" y="40" width="2.4" height="13" rx="1.2" transform="rotate(14 200 40)"/><rect x="245" y="10" width="2.4" height="13" rx="1.2" transform="rotate(14 245 10)"/><rect x="290" y="34" width="2.4" height="13" rx="1.2" transform="rotate(14 290 34)"/><rect x="335" y="8" width="2.4" height="13" rx="1.2" transform="rotate(14 335 8)"/><rect x="380" y="30" width="2.4" height="13" rx="1.2" transform="rotate(14 380 30)"/><rect x="425" y="12" width="2.4" height="13" rx="1.2" transform="rotate(14 425 12)"/><rect x="470" y="36" width="2.4" height="13" rx="1.2" transform="rotate(14 470 36)"/><rect x="515" y="6" width="2.4" height="13" rx="1.2" transform="rotate(14 515 6)"/><rect x="560" y="28" width="2.4" height="13" rx="1.2" transform="rotate(14 560 28)"/><rect x="600" y="10" width="2.4" height="13" rx="1.2" transform="rotate(14 600 10)"/><rect x="220" y="70" width="2.4" height="13" rx="1.2" transform="rotate(14 220 70)"/><rect x="315" y="62" width="2.4" height="13" rx="1.2" transform="rotate(14 315 62)"/><rect x="410" y="66" width="2.4" height="13" rx="1.2" transform="rotate(14 410 66)"/><rect x="500" y="58" width="2.4" height="13" rx="1.2" transform="rotate(14 500 58)"/><rect x="585" y="64" width="2.4" height="13" rx="1.2" transform="rotate(14 585 64)"/><rect x="175" y="92" width="2.4" height="13" rx="1.2" transform="rotate(14 175 92)"/><rect x="360" y="96" width="2.4" height="13" rx="1.2" transform="rotate(14 360 96)"/><rect x="455" y="90" width="2.4" height="13" rx="1.2" transform="rotate(14 455 90)"/></g>
+      <path d="M40 220 L170 128 L240 166 L340 96 L430 150 L520 104 L640 140 L640 220Z" fill="#fff" opacity=".06"/>
+      <path d="M0 220 L130 176 L230 196 L350 156 L460 186 L560 162 L640 178 L640 220Z" fill="#fff" opacity=".09"/>
+      <path d="M300 214 H640" stroke="#c9a46a" stroke-width="3" opacity=".45"/>
+      <g fill="none" stroke="#97c459" stroke-width="3" stroke-linecap="round" opacity=".8">
+        <path d="M400 214 V150"/><path d="M400 186 q-16 -12 -28 -6"/><path d="M400 172 q16 -12 28 -6"/><path d="M400 158 q-14 -10 -24 -6"/>
+        <path d="M480 214 V138"/><path d="M480 178 q-16 -12 -28 -6"/><path d="M480 162 q16 -12 28 -6"/><path d="M480 148 q-14 -10 -24 -6"/>
+        <path d="M560 214 V146"/><path d="M560 184 q-16 -12 -28 -6"/><path d="M560 168 q16 -12 28 -6"/><path d="M560 154 q-14 -10 -24 -6"/>
+        <path d="M440 214 q-2 -14 4 -24"/><path d="M520 214 q-2 -14 4 -24"/><path d="M600 214 q-2 -12 4 -20"/>
+      </g>
+      <g fill="#97c459" opacity=".75"><ellipse cx="436" cy="192" rx="8" ry="5"/><ellipse cx="452" cy="186" rx="8" ry="5"/><ellipse cx="516" cy="192" rx="8" ry="5"/><ellipse cx="532" cy="186" rx="8" ry="5"/><ellipse cx="596" cy="196" rx="7" ry="4"/><ellipse cx="611" cy="190" rx="7" ry="4"/></g>
+      <g fill="#efb04a" opacity=".85"><rect x="403" y="164" width="7" height="15" rx="3"/><rect x="483" y="152" width="7" height="15" rx="3"/><rect x="563" y="160" width="7" height="15" rx="3"/></g>
+    </svg>
   </header>
   <div class="stack">
     <div id="inicioAlerta" class="banner" role="status"></div>
