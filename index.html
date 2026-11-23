@@ -134,6 +134,9 @@ h1,h2,h3,h4,p{margin:0}
 .btn.verde{background:var(--green2);color:#fff}
 .btn.ghost{background:rgba(255,255,255,.15);color:#fff}
 .btn.claro{background:#eaf2f8;color:var(--navy)}
+.btn.inicio{background:#fff;color:var(--navy);font-size:14.5px;padding:11px 18px;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.pie-inicio{display:flex;justify-content:center;margin:18px 0 4px}
+.limpiar{display:flex;justify-content:flex-end;margin-top:10px}
 .btn:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,tr[tabindex]:focus-visible,.opcion:focus-visible,.tile:focus-visible{outline:3px solid #7fb5ff;outline-offset:2px}
 
 /* Tarjetas */
@@ -238,7 +241,7 @@ details.mas .kpis{margin-top:12px}
 .ribbon{background:#fff3cd;border-bottom:2px solid #e0b100;color:#5c4400;padding:10px 16px;font-size:14px;font-weight:600;text-align:center}
 
 /* Tarjetas por punto */
-.puntos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;margin-top:12px}
+.puntos{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:14px;margin-top:12px;align-items:start}
 .punto .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .punto .stats{font-size:13px;margin:10px 0 4px;color:#344054}
 .punto h4{font-size:13.5px;margin:12px 0 4px}
@@ -248,6 +251,9 @@ details.mas .kpis{margin-top:12px}
 .pdet-ver::before{content:'▸';font-size:12px}
 .pdet[open] .pdet-ver{color:#667085}
 .pdet[open] .pdet-ver::before{content:'▾'}
+.pdet-ver .ocu{display:none}
+.pdet[open] .pdet-ver .ver{display:none}
+.pdet[open] .pdet-ver .ocu{display:inline}
 .pdet[open]>summary .stats{display:none}
 .mas-btn{margin:14px auto 0;display:block}
 
@@ -271,6 +277,7 @@ footer p{margin-top:8px;max-width:80ch}
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12h14M5 12l6 6M5 12l6-6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><path d="M7 11l5 5l5-5"/><path d="M12 4v12"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h6"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636-2.87l-8.106-13.536a1.914 1.914 0 0 0-3.274 0z"/><path d="M12 16h.01"/></symbol>
@@ -335,7 +342,7 @@ footer p{margin-top:8px;max-width:80ch}
 <section id="panelComunitario" class="pantalla" aria-labelledby="comTitulo" hidden>
   <header class="hero">
     <div class="hero-l">
-      <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
+      <button class="btn inicio" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Inicio</button>
       <div><div class="eyebrow" id="comEyebrow">Vista comunitaria</div><h1 id="comTitulo">Mi comunidad</h1></div>
     </div>
     <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img class="logo-maga" alt="MAGA"><img class="usac logo-usac" alt="CUNORI USAC - Ingeniería en Gestión Ambiental" onerror="this.remove()"></div>
@@ -385,7 +392,7 @@ footer p{margin-top:8px;max-width:80ch}
 <section id="panelMunicipal" class="pantalla" aria-labelledby="munTitulo" hidden>
   <header class="hero">
     <div class="hero-l">
-      <button class="btn ghost" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Inicio</button>
+      <button class="btn inicio" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Inicio</button>
       <div><div class="eyebrow">Vista municipal y departamental</div><h1 id="munTitulo">Chiquimula</h1></div>
     </div>
     <div class="hero-d"><div class="logos sm"><img class="blanco" src="crs-logo.png" alt="Catholic Relief Services" onerror="this.remove()"><img class="logo-maga" alt="MAGA"><img class="usac logo-usac" alt="CUNORI USAC - Ingeniería en Gestión Ambiental" onerror="this.remove()"></div>
@@ -405,6 +412,7 @@ footer p{margin-top:8px;max-width:80ch}
         <div class="fld"><label for="fDesde">Desde</label><input type="date" id="fDesde"></div>
         <div class="fld"><label for="fHasta">Hasta</label><input type="date" id="fHasta"></div>
       </div>
+      <div class="limpiar" id="munLimpiar" hidden><button class="btn claro" type="button" id="btnLimpiar">Ver todo el departamento</button></div>
       <div class="mun-cul" id="munCul"></div>
       <p class="nota" id="munBase" style="margin-top:10px"></p>
     </div>
@@ -455,6 +463,7 @@ footer p{margin-top:8px;max-width:80ch}
 </section>
 
 <footer>
+  <div class="pie-inicio" id="pieInicio" hidden><button class="btn claro" data-ir="inicio" type="button"><svg class="i" aria-hidden="true"><use href="#i-home"/></svg>Volver al inicio</button></div>
   <p id="pie"></p>
   <details style="margin-top:10px">
     <summary>¿Cómo se calcula el nivel de alerta?</summary>
@@ -1490,7 +1499,8 @@ function mostrar(n){
   $('#pantallaInicio').hidden = n !== 'inicio';
   $('#panelComunitario').hidden = n !== 'comunitario';
   $('#panelMunicipal').hidden = n !== 'municipal';
-  $('footer').style.maxWidth = ({ inicio: '1400px', comunitario: '1100px' })[n] || '';   // el pie sigue el ancho de la pantalla
+  $('footer').style.maxWidth = ({ inicio: '1400px', comunitario: '1100px' })[n] || '';
+  $('#pieInicio').hidden = n === 'inicio';   // el pie sigue el ancho de la pantalla
   if (n === 'inicio') renderInicio();
   if (n === 'comunitario') renderComunitario();
   if (n === 'municipal') renderMunicipal();
@@ -1872,6 +1882,7 @@ function renderMunicipal(){
   F.inf = llenar($('#fInf'), uniq(A.filter(r => (!F.mun || r.municipio === F.mun) && (!F.com || r.comunidad === F.com) && (!F.cas || r.caserio === F.cas)).map(r => r.responsable)), 'Todos', F.inf);
   $('#fDesde').value = F.desde; $('#fHasta').value = F.hasta;
 
+  { const rgT = rangoPeriodo('todo'); $('#munLimpiar').hidden = !(F.mun || F.com || F.cas || F.inf || F.desde !== rgT.desde || F.hasta !== rgT.hasta); }
   if (!SAT.CULTIVOS[F.cul]){
     // por defecto, el cultivo que está en campo en más puntos (si empatan, el maíz)
     const enC = cul => puntosDe({ ...F, mun: '', com: '', cas: '', inf: '', cul }).filter(p => p.principal).length;
@@ -2028,7 +2039,7 @@ function pintarCards(){
     return `<article class="card punto"><details class="pdet"><summary><div class="ph"><div><h3>${esc(p.comunidad)} · ${esc(p.caserio || p.comunidad)}</h3>
       <div class="sub"><b>${esc(p.responsable)}</b> · ${esc(p.municipio)}</div></div><div style="text-align:right">${chip(p.estado)}${p.estado === 'sindatos' && p.motivo ? `<div class="sub">${esc(p.motivo)}</div>` : ''}</div></div>
       <p class="stats">${etp ? `${esc(p.principal.nombre)} · ${esc(etp.n.toLowerCase())} · ` : ''}<b>${nf(r.total, 0)} mm</b> acumulados · <b>${r.dl}</b> días con lluvia</p>
-      <span class="pdet-ver">Ver gráfica y línea de tiempo</span></summary>
+      <span class="pdet-ver"><span class="ver">Ver gráfica y línea de tiempo</span><span class="ocu">Ocultar gráfica</span></span></summary>
       ${etp ? `<p class="stats">${esc(p.principal.nombre)} · ${esc(etp.n)}: ${resumenEtapa(p.principal)}</p>` : ''}
       <p class="stats">Período: <b>${fmt(s.fechas[0])} – ${fmt(s.fechas[s.fechas.length - 1])}</b> · Acumulado: <b>${nf(r.total, 0)} mm</b> · Días con lluvia: <b>${r.dl}</b> · Días sin lluvia: <b>${r.ds}</b> · Máx. diario: <b>${mmD(r.max)} mm</b></p>
       ${unico ? '' : '<div class="chartbox sm"><canvas></canvas></div>'}
@@ -2461,6 +2472,8 @@ function init(){
   $('#munCul').addEventListener('click', e => { const b = e.target.closest('button[data-cul]'); if (b){ F.cul = b.dataset.cul; renderMunicipal(); } });
 
   $('#fMun').addEventListener('change', e => { F.mun = e.target.value; F.com = F.cas = F.inf = ''; renderMunicipal(); });
+  // vuelve a todo el departamento y al período completo; respeta el cultivo y la semilla elegidos
+  $('#btnLimpiar').addEventListener('click', () => { const rg = rangoPeriodo('todo'); F.mun = F.com = F.cas = F.inf = ''; F.desde = rg.desde; F.hasta = rg.hasta; renderMunicipal(); });
   $('#fCom').addEventListener('change', e => { F.com = e.target.value; F.cas = F.inf = ''; renderMunicipal(); });
   $('#fCas').addEventListener('change', e => { F.cas = e.target.value; F.inf = ''; renderMunicipal(); });
   $('#fInf').addEventListener('change', e => { F.inf = e.target.value; renderMunicipal(); });
