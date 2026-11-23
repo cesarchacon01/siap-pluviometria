@@ -1278,7 +1278,9 @@ function historiaHTML(p, culSel){
     const futura = e.estado === 'futura';
     const calif = !futura && !e.info && !e.temprano && e.estado !== 'sindatos';
     const palabra = futura ? `Empieza el ${fmtC(e.ini)}` : e.info ? 'El grano se está secando' : e.temprano ? 'Recién empieza' : e.estado === 'sindatos' ? 'Faltan datos' : (e.inv ? PALABRA_INV : PALABRA)[e.estado];
-    const mm = futura ? '' : e.inv || e.info ? `Llovieron ${nf(e.mm, 0)} mm` : `Recibió ${nf(e.mm, 0)} de ${e.necesita} mm`;
+    // la cifra de referencia es la misma de la raya punteada del vaso (ver la leyenda arriba)
+    const mm = futura ? '' : e.inv ? `Llovieron ${nf(e.mm, 0)} mm (máximo ${e.l[0]} mm)`
+      : e.info ? `Llovieron ${nf(e.mm, 0)} de ${e.necesita} mm` : `Recibió ${nf(e.mm, 0)} de ${e.necesita} mm`;
     return `<div class="hist-et${e.enCurso ? ' hoy' : ''}${futura ? ' fut' : ''}">
       ${e.enCurso ? '<span class="hist-hoy">Ahora</span>' : ''}
       <div class="hist-dib">${plantaSVG(i, c.cul, calif ? e.estado : 'normal', futura)}${vasoSVG(e, futura)}</div>
