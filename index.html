@@ -140,7 +140,9 @@ h1,h2,h3,h4,p{margin:0}
 .fld .fijo{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#eaf2f8;font-weight:700;font-size:14px;min-height:40px}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .fld.per{grid-column:1/-1}
-.sel.semillas{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);grid-template-columns:repeat(auto-fit,minmax(240px,320px))}
+.mun-cul{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.mun-cul .cul-sel{margin-top:0}
+.mun-cul .semilla{margin-top:0}
 .sel.c{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 @media (min-width:1000px){.sel.m7{grid-template-columns:1.2fr 1.5fr 1.5fr 1.2fr 1.3fr 1fr 1fr}}
 .fld select{text-overflow:ellipsis}
@@ -367,10 +369,7 @@ footer p{margin-top:8px;max-width:80ch}
         <div class="fld"><label for="fDesde">Desde</label><input type="date" id="fDesde"></div>
         <div class="fld"><label for="fHasta">Hasta</label><input type="date" id="fHasta"></div>
       </div>
-      <div class="sel semillas">
-        <div class="fld"><label for="fCicloMaiz">Tipo de semilla de maíz</label><select id="fCicloMaiz" data-ciclo="maiz"></select></div>
-        <div class="fld"><label for="fCicloFrijol">Tipo de semilla de frijol</label><select id="fCicloFrijol" data-ciclo="frijol"></select></div>
-      </div>
+      <div class="mun-cul" id="munCul"></div>
       <p class="nota" id="munBase" style="margin-top:10px"></p>
     </div>
 
@@ -514,6 +513,8 @@ function cambiarCiclo(cul, val){
   calcPuntos(); refrescar();
 }
 const opcionesCiclo = cul => Object.entries(SAT.CICLOS[cul].opciones).map(([k, o]) => `<option value="${k}"${k === CICLO_SEL[cul] ? ' selected' : ''}>${esc(o.n)}${k === SAT.CICLOS[cul].defecto ? ' (por defecto)' : ''} · ${o.dias} días</option>`).join('');
+const cicloTextoCul = cul => `${SAT.CULTIVOS[cul].nombre.toLowerCase()} de ${cicloDe(cul).n.toLowerCase()} (${cicloDe(cul).dias} días)`;
+const cicloEsDefectoCul = cul => CICLO_SEL[cul] === SAT.CICLOS[cul].defecto;
 const cicloTexto = () => `maíz de ${cicloDe('maiz').n.toLowerCase()} (${cicloDe('maiz').dias} días) y frijol de ${cicloDe('frijol').n.toLowerCase()} (${cicloDe('frijol').dias} días)`;
 
 const LABEL = { normal:'Vigilancia', atencion:'Prevención', alerta:'Peligro', critico:'Emergencia', sindatos:'Datos insuficientes', cosechado:'Ciclo terminado', sincultivo:'Sin cultivo en campo' };
@@ -592,6 +593,12 @@ function calcPuntos(){
   }
   S.puntos = new Map();
   for (const [k, rows] of por) S.puntos.set(k, statsPunto(k, rows));
+  // vista municipal: alertas calculadas con un solo cultivo, como en el tablero comunitario
+  S.puntosCul = {};
+  for (const cul of Object.keys(SAT.CULTIVOS)){
+    S.puntosCul[cul] = new Map();
+    for (const [k, rows] of por) S.puntosCul[cul].set(k, statsPunto(k, rows, cul));
+  }
 }
 
 const siembraRef = (cul, mun) => { const t = SAT.SIEMBRA[cul]; return `${S.refYear}-${t[mun] || t._defecto}`; };
@@ -708,7 +715,7 @@ const etapaActual = c => c && c.actual >= 0 ? c.etapas[c.actual] : null;
 /* "frijol en desarrollo de grano" */
 const cultivoEtapa = c => c && etapaActual(c) ? `${c.nombre.toLowerCase()} en ${etapaActual(c).n.toLowerCase()}` : '';
 
-function statsPunto(key, rows){
+function statsPunto(key, rows, soloCul){
   const porFecha = new Map();
   const ordenadas = rows.slice().sort((a,b) => a.fecha < b.fecha ? -1 : 1);
   ordenadas.forEach(r => porFecha.set(r.fecha, r));
@@ -738,7 +745,7 @@ function statsPunto(key, rows){
   }
   const ultima = ordenadas[ordenadas.length - 1];
   // nivel de alerta: el cultivo en campo más afectado
-  const cultivos = Object.keys(SAT.CULTIVOS).map(c => evalCultivo(porFecha, ultima.municipio, c));
+  const cultivos = (soloCul ? [soloCul] : Object.keys(SAT.CULTIVOS)).map(c => evalCultivo(porFecha, ultima.municipio, c));
   const activos = cultivos.filter(c => c.activo).sort((a, b) => SEV[a.estado] - SEV[b.estado] || (a.pct ?? 999) - (b.pct ?? 999));
   let estado, motivo = '', tipoMotivo = '';
   const principal = activos[0] || null;
@@ -753,7 +760,7 @@ function statsPunto(key, rows){
       // si en floración o llenado de grano faltó más de un tercio de los días, el resultado es incompleto
       resIncompleto = [cosecha.etapas[2], cosecha.etapas[3]].some(e => e.faltan.length > e.dias / 3);
       estado = 'cosechado'; motivo = `Ciclo del ${cosecha.nombre.toLowerCase()} terminado el ${fmtC(cosecha.etapas[cosecha.etapas.length - 1].fin)}`;
-    } else { estado = 'sincultivo'; motivo = 'Según las fechas de siembra de referencia, ahora no hay maíz ni frijol en campo'; }
+    } else { estado = 'sincultivo'; motivo = `Según las fechas de siembra de referencia, ahora no hay ${soloCul ? SAT.CULTIVOS[soloCul].nombre.toLowerCase() : 'maíz ni frijol'} en campo`; }
   }
   else if (ult7 < CFG.MIN_REPORTES_7D){ estado = 'sindatos'; motivo = `Solo ${ult7} de los últimos 7 días con reporte`; tipoMotivo = 'reportes'; }
   else { estado = principal.estado; if (estado === 'sindatos'){ motivo = principal.motivo; tipoMotivo = 'faltantes'; } }
@@ -847,7 +854,8 @@ function filtrar(f){
     (!f.desde || r.fecha >= f.desde) && (!f.hasta || r.fecha <= f.hasta));
 }
 function puntosDe(f){
-  return [...S.puntos.values()].filter(p =>
+  const fuente = f.cul && S.puntosCul && S.puntosCul[f.cul] ? S.puntosCul[f.cul] : S.puntos;
+  return [...fuente.values()].filter(p =>
     (!f.mun || p.municipio === f.mun) && (!f.com || p.comunidad === f.com) &&
     (!f.cas || p.caserio === f.cas) && (!f.inf || p.informantes.includes(f.inf)));
 }
@@ -1023,7 +1031,7 @@ const plural = (n, a, b) => n === 1 ? a : b;
 const charts = { com:null, mun:null, cards:[] };
 const CTX = { com:null, mun:null };
 const C = { mun:'', com:'', cas:'', inf:'', per:'todo', cul:'' };                       // vista comunitaria
-const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'' }; // vista municipal
+const F = { mun:'', com:'', cas:'', inf:'', desde:'', hasta:'', cul:'' }; // vista municipal (cul: cultivo con el que se calculan las alertas)
 let cardsN = 12, cardsLista = [], cardsRows = new Map(), cardsHasta = '';
 
 /* Acciones y recomendaciones por nivel de alerta (rotafolio SAT MACP) */
@@ -1754,13 +1762,21 @@ function renderMunicipal(){
   F.inf = llenar($('#fInf'), uniq(A.filter(r => (!F.mun || r.municipio === F.mun) && (!F.com || r.comunidad === F.com) && (!F.cas || r.caserio === F.cas)).map(r => r.responsable)), 'Todos', F.inf);
   $('#fDesde').value = F.desde; $('#fHasta').value = F.hasta;
 
+  if (!SAT.CULTIVOS[F.cul]){
+    // por defecto, el cultivo que está en campo en más puntos (si empatan, el maíz)
+    const enC = cul => puntosDe({ ...F, mun: '', com: '', cas: '', inf: '', cul }).filter(p => p.principal).length;
+    F.cul = Object.keys(SAT.CULTIVOS).reduce((a, b) => enC(b) > enC(a) ? b : a);
+  }
   const minEv = (F.com || F.cas) ? 1 : CFG.GRUPO_MIN_EVALUADOS;   // a nivel de comunidad o caserío no aplica el mínimo
   const rows = filtrar(F), pts = puntosDe(F), g = estadoGrupo(pts, minEv);
   const terr = F.com ? `${F.com}${F.mun ? ' · ' + F.mun : ''}` : F.mun || 'Departamento de Chiquimula';
   $('#munTitulo').textContent = terr;
-  $('#fCicloMaiz').innerHTML = opcionesCiclo('maiz');
-  $('#fCicloFrijol').innerHTML = opcionesCiclo('frijol');
-  $('#munBase').innerHTML = `Base activa: ${nf(A.length)} registros. Filtro actual: ${nf(rows.length)} registros. Etapas calculadas con <b>${esc(cicloTexto())}</b>${cicloEsDefecto() ? ' (semilla por defecto del visor).' : ` — <b>esta no es la semilla por defecto</b>; la elección se guarda en este equipo y también se aplica al panel comunitario. <button type="button" class="lnk" data-reset-ciclo>Volver a la semilla por defecto</button>`}`;
+  const nomCul = SAT.CULTIVOS[F.cul].nombre.toLowerCase();
+  const enCampo = cul => { const n = puntosDe({ ...F, cul }).filter(p => p.principal).length; return n ? `En campo en ${nf(n)} ${plural(n, 'punto', 'puntos')}` : 'Sin cultivo en campo'; };
+  $('#munCul').innerHTML = `<div class="cul-sel" role="group" aria-label="¿Con qué cultivo calcular las alertas?"><span class="cul-q">¿Con qué cultivo calcular las alertas?</span>${Object.keys(SAT.CULTIVOS).map(cul =>
+      `<button type="button" class="cul-btn" data-cul="${cul}" aria-pressed="${cul === F.cul}">${iconoCultivo(cul)}<span><b>${esc(SAT.CULTIVOS[cul].nombre)}</b><small>${esc(enCampo(cul))}</small></span></button>`).join('')}</div>
+    <div class="semilla"><label for="fCiclo">Tipo de semilla de ${esc(nomCul)}</label><select id="fCiclo" data-ciclo="${F.cul}">${opcionesCiclo(F.cul)}</select>${cicloEsDefectoCul(F.cul) ? '' : '<button type="button" class="lnk" data-reset-ciclo>Volver a la semilla por defecto</button>'}</div>`;
+  $('#munBase').innerHTML = `Base activa: ${nf(A.length)} registros. Filtro actual: ${nf(rows.length)} registros. Alertas calculadas solo con <b>${esc(cicloTextoCul(F.cul))}</b>${cicloEsDefectoCul(F.cul) ? ' (semilla por defecto del visor).' : ' — <b>esta no es la semilla por defecto</b>; la elección se guarda en este equipo y también se aplica al panel comunitario.'}`;
 
   // alerta del nivel que se está mirando
   const pct = Math.round(g.pctAlerta);
@@ -1772,7 +1788,7 @@ function renderMunicipal(){
     tit = `Ciclo terminado al ${fechaCorta}: ${g.kCos} de ${g.nCos} puntos con poca lluvia en floración o llenado de grano`;
     det = 'No es una alerta activa: el cultivo ya se cosechó. Indica dónde es probable que la cosecha haya sido menor; sirve para estimar pérdidas y para la sala situacional de SAN.';
   } else if (g.estado === 'sincultivo'){
-    tit = `Sin maíz ni frijol en campo al ${fechaCorta}`;
+    tit = `Sin ${nomCul} en campo al ${fechaCorta}`;
     det = 'Según las fechas de siembra de referencia, ahora no hay cultivo en campo. El registro de lluvia continúa para la próxima temporada.';
   } else if (g.estado === 'sindatos'){
     tit = `Datos insuficientes al ${fechaCorta} para calificar la etapa del cultivo`;
@@ -1876,7 +1892,7 @@ function renderMunicipal(){
   cardsN = 12;
   pintarCards();
 
-  CTX.mun = { territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: ev, banner: { titulo: tit, detalle: det },
+  CTX.mun = { cul: F.cul, territorio: terr, periodo: `${fmt(F.desde)} - ${fmt(F.hasta)}`, estado: ev, banner: { titulo: tit, detalle: det },
               lectura, filas, serie: s, accion: accionesTexto(ev, 'municipio', esCosecha(g.peor)),
               kpis: [
                 ay.mm == null ? { v: 'Sin reportes', t: `Lluvia del día anterior (${fmtC(S.ref)})` } : { v: `${nf(ay.mm, 1)} mm`, t: ay.atrasado ? `Lluvia promedio del ${fmtC(ay.fecha)} (último día con reporte)` : `Promedio de lluvia del día anterior (${fmtC(ay.fecha)})` },
@@ -2089,7 +2105,7 @@ async function exportarPDF(ctx){
   txt(ctx.territorio, 16, true, [15,39,66], 1);
   txt(`Período del informe: ${ctx.periodo}`, 9.5, false, [102,112,133], 0.5);
   txt(`Informe generado el ${fmt(hoy)}. Último día con registros: ${fmt(S.ref)} (el registro de las 7 am es de la lluvia del día anterior).`, 9, false, [102,112,133], 4);
-  txt(`Etapas del cultivo calculadas con ${cicloTexto()}${cicloEsDefecto() ? ' (semilla por defecto del visor)' : ' (elegida en el equipo que generó el informe)'}.`, 9, false, [102,112,133], 4);
+  txt(ctx.cul ? `Alertas calculadas solo con ${cicloTextoCul(ctx.cul)}${cicloEsDefectoCul(ctx.cul) ? ' (semilla por defecto del visor)' : ' (elegida en el equipo que generó el informe)'}.` : `Etapas del cultivo calculadas con ${cicloTexto()}${cicloEsDefecto() ? ' (semilla por defecto del visor)' : ' (elegida en el equipo que generó el informe)'}.`, 9, false, [102,112,133], 4);
 
   // 1. estado, en una caja del color del semáforo (con el vaso de humedad en la vista comunitaria)
   const vaso = ctx.vaso != null && ctx.estado !== 'sindatos';
@@ -2321,7 +2337,8 @@ function init(){
     const s = e.target.closest('select[data-ciclo]'); if (!s) return;
     cambiarCiclo(s.dataset.ciclo, s.value);
   });
-  for (const id of ['#fCicloMaiz', '#fCicloFrijol']) $(id).addEventListener('change', e => cambiarCiclo(e.target.dataset.ciclo, e.target.value));
+  $('#munCul').addEventListener('change', e => { const s = e.target.closest('select[data-ciclo]'); if (s) cambiarCiclo(s.dataset.ciclo, s.value); });
+  $('#munCul').addEventListener('click', e => { const b = e.target.closest('button[data-cul]'); if (b){ F.cul = b.dataset.cul; renderMunicipal(); } });
 
   $('#fMun').addEventListener('change', e => { F.mun = e.target.value; F.com = F.cas = F.inf = ''; renderMunicipal(); });
   $('#fCom').addEventListener('change', e => { F.com = e.target.value; F.cas = F.inf = ''; renderMunicipal(); });
