@@ -82,6 +82,7 @@ h1,h2,h3,h4,p{margin:0}
 .hist-c{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:13px;font-weight:700;line-height:1.2}
 .hist-c span[class^="e-"]{color:var(--fg)}
 .hist-mm{font-size:12px;color:var(--muted)}
+.hist-mm small{display:block;font-size:11px;font-style:italic;margin-top:2px}
 .hist-flecha{align-self:center;font-size:26px;color:#9aa4ae;font-weight:700}
 .hist-ley{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:13px;color:#344054}
 .hist-ley span{display:inline-flex;align-items:center;gap:6px}
@@ -1281,12 +1282,15 @@ function historiaHTML(p, culSel){
     // la cifra de referencia es la misma de la raya punteada del vaso (ver la leyenda arriba)
     const mm = futura ? '' : e.inv ? `Llovieron ${nf(e.mm, 0)} mm (máximo ${e.l[0]} mm)`
       : e.info ? `Llovieron ${nf(e.mm, 0)} de ${e.necesita} mm` : `Recibió ${nf(e.mm, 0)} de ${e.necesita} mm`;
+    // etapa en curso: la cifra es lo que necesitaba hasta hoy; se aclara el día y el total de la etapa
+    const enCursoTxt = !futura && e.enCurso
+      ? `<small>día ${e.trans} de ${e.dias}${e.inv ? '' : ` · ${Math.round(e.l[2])} mm en toda la etapa`}</small>` : '';
     return `<div class="hist-et${e.enCurso ? ' hoy' : ''}${futura ? ' fut' : ''}">
       ${e.enCurso ? '<span class="hist-hoy">Ahora</span>' : ''}
       <div class="hist-dib">${plantaSVG(i, c.cul, calif ? e.estado : 'normal', futura)}${vasoSVG(e, futura)}</div>
       <div class="hist-n">${esc(e.n)}</div>
       <div class="hist-c">${calif ? caraSVG(e.estado, 26) : ''}<span class="${calif ? 'e-' + e.estado : ''}">${esc(palabra)}</span></div>
-      <div class="hist-mm">${mm}</div></div>`;
+      <div class="hist-mm">${mm}${enCursoTxt}</div></div>`;
   }).join('<div class="hist-flecha" aria-hidden="true">›</div>');
   const semilla = `<div class="semilla"><label for="selCiclo">Tipo de semilla de ${esc(c.nombre.toLowerCase())}</label><select id="selCiclo" data-ciclo="${c.cul}">${opcionesCiclo(c.cul)}</select>${cicloEsDefecto() ? '' : '<button type="button" class="lnk" data-reset-ciclo>Volver a la semilla por defecto</button>'}</div>`;
   return `<div class="hist-cab"><div><h2>¿Qué le pasó a tu ${esc(c.nombre.toLowerCase())}?</h2>
