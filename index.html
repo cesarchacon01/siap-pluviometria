@@ -1324,7 +1324,7 @@ function historiaHTML(p, culSel){
     // franja de calendario: fechas con la siembra de referencia y la semilla elegida; la duración, en rango según las semillas del cultivo
     const [dMin, dMax] = rangoDiasEtapa(c.cul, i), dura = dMin === dMax ? `${dMin} días` : `de ${dMin} a ${dMax} días`;
     const cal = `<div class="hist-cal ${e.enCurso ? 'cur' : futura ? 'fut' : 'pas'}"><b>${futura ? `Empieza el ${fmtDe(e.ini)}` : fmtRango(e.ini, e.fin)}</b>${e.enCurso
-      ? `Día ${e.trans} · dura ${dura}<span class="av"><i style="width:${Math.round(e.trans / e.dias * 100)}%"></i></span>` : `Dura ${dura}`}</div>`;
+      ? `Dura ${dura}<span class="av"><i style="width:${Math.round(e.trans / e.dias * 100)}%"></i></span>` : `Dura ${dura}`}</div>`;
     return `<div class="hist-et${e.enCurso ? ' hoy' : ''}${futura ? ' fut' : ''}">
       ${e.enCurso ? '<span class="hist-hoy">Ahora</span>' : ''}
       ${cal}
