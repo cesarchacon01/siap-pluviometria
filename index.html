@@ -2102,7 +2102,9 @@ function filasTablero(p){
   }))).filter(f => f['Lluvia (mm)'] !== '' || f._actual);
 }
 function colsExcel(p, cul){
-  const c = p.cultivos.find(x => x.cul === cul), e = etapaEval(c), cur = etapaActual(c), N = c.nombre;
+  const c = p.cultivos.find(x => x.cul === cul), N = SAT.CULTIVOS[cul].nombre;
+  if (!c) return {};
+  const e = etapaEval(c), cur = etapaActual(c);
   return { [`${N}: siembra de referencia`]: c.siembra, [`${N}: etapa actual`]: cur ? cur.n : (c.fase === 'terminado' ? 'Ciclo terminado' : 'Sin sembrar'),
            [`${N}: nivel`]: c.activo ? LABEL[c.estado] : '', [`${N}: lluvia de la etapa calificada (mm)`]: e ? e.mm : '', [`${N}: referencia (mm)`]: e ? (e.inv ? `máx. ${e.l[0]}` : `> ${e.necesita}`) : '' };
 }
@@ -2110,17 +2112,19 @@ function colsExcel(p, cul){
 /* =========================== EXPORTAR =========================== */
 function exportarExcel(){
   if (typeof XLSX === 'undefined'){ alert('No se pudo cargar el generador de Excel. Revisa la conexión a internet.'); return; }
-  const rows = filtrar(F), pts = puntosDe(F);
+  // el nivel es el del cultivo elegido en el panel; las columnas por cultivo traen maíz y frijol
+  const rows = filtrar(F), pts = puntosDe(F), todo = p => S.puntos.get(p.key) || p;
+  const nomCul = SAT.CULTIVOS[F.cul] ? SAT.CULTIVOS[F.cul].nombre.toLowerCase() : 'cultivo';
   const resumen = pts.slice().sort(cmpRiesgo).map(p => ({
     'Municipio': p.municipio, 'Comunidad': p.comunidad, 'Caserío': p.caserio, 'Informante': p.responsable,
-    'Nivel': LABEL[p.estado], 'Motivo': p.motivo || '', ...colsExcel(p, 'maiz'), ...colsExcel(p, 'frijol'), 'Días sin lluvia': p.diasSinLluvia ?? '',
+    [`Nivel (${nomCul})`]: LABEL[p.estado], 'Motivo': p.motivo || '', ...colsExcel(todo(p), 'maiz'), ...colsExcel(todo(p), 'frijol'), 'Días sin lluvia': p.diasSinLluvia ?? '',
     'Última lluvia': p.ultimaLluvia || '', [`Lluvia del día anterior ${S.ref} (mm)`]: p.mmRef ?? '', 'Acumulado de la temporada (mm)': Math.round(p.acum * 10) / 10, 'Reportes en los últimos 7 días': p.ult7
   }));
   const datos = rows.map(r => ({ 'Municipio': r.municipio, 'Comunidad': r.comunidad, 'Caserío': r.caserio, 'Informante': r.responsable, 'Fecha': r.fecha, 'Lluvia (mm)': r.mm }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumen), 'Resumen por punto');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(datos), 'Registros');
-  const tab = pts.slice().sort(cmpRiesgo).flatMap(p => filasTablero(p).map(f => ({ 'Municipio': p.municipio, 'Comunidad': p.comunidad, 'Caserío': p.caserio, 'Informante': p.responsable, ...Object.fromEntries(Object.entries(f).filter(([k]) => !k.startsWith('_'))) })));
+  const tab = pts.slice().sort(cmpRiesgo).flatMap(p => filasTablero(todo(p)).map(f => ({ 'Municipio': p.municipio, 'Comunidad': p.comunidad, 'Caserío': p.caserio, 'Informante': p.responsable, ...Object.fromEntries(Object.entries(f).filter(([k]) => !k.startsWith('_'))) })));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(tab), 'Tablero fenológico');
   XLSX.writeFile(wb, `pluviometria_${S.ref}.xlsx`);
 }
