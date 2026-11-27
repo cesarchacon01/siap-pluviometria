@@ -1835,7 +1835,8 @@ function renderComunitario(){
 
   const terr = `${nombre} · ${C.mun}`;
   CTX.com = { territorio: terr, periodo: `${fmt(rg.desde)} - ${fmt(rg.hasta)}`, estado: g.estado, banner: { titulo: t, detalle: d },
-              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), kpis: kpisCom, serie: s, accion: accionesTexto(g.estado, 'comunidad', esCosecha(g.peor)), tablero: filasTablero(g.peor) };
+              lectura: lecturaPeriodo(s, r, g, nombre, pts, lluviaDia(base, S.ref)), filas: filasRiesgo(pts, 'punto'), kpis: kpisCom, serie: s, accion: accionesTexto(g.estado, 'comunidad', esCosecha(g.peor)), tablero: filasTablero(g.peor),
+              historia: { p: (g.peor && S.puntos.get(g.peor.key)) || pTodos, cul: culCom } };
 }
 
 /* =========================== MUNICIPAL =========================== */
@@ -2224,6 +2225,110 @@ function dibujarVaso(doc, x, y, w, h, pct, color){
   doc.lines([[0, h - r], [0, c, r - c, r, r, r], [w - 2 * r, 0], [c, 0, r, r - c, r, -r], [0, -(h - r)]], x, y, [1, 1], 'S', false);
 }
 
+/* Franja "¿Qué le pasó a tu cultivo?" para el PDF comunitario: los mismos dibujos del visor
+   (fechas, planta, vaso, carita y mm de cada etapa) armados en un SVG y pasados a imagen */
+function franjaSVG(p, c){
+  const CW = 138, GAP = 14, NAV = '#0f2742';
+  let fondo = 0;
+  const med = document.createElement('canvas').getContext('2d');
+  const partir = (t, size, bold, ancho = CW - 10) => {
+    med.font = `${bold ? 'bold ' : ''}${size}px Helvetica, Arial, sans-serif`;
+    const out = []; let l = '';
+    String(t).split(' ').forEach(w => { const prueba = l ? l + ' ' + w : w; if (med.measureText(prueba).width > ancho && l){ out.push(l); l = w; } else l = prueba; });
+    if (l) out.push(l);
+    return out;
+  };
+  const texto = (lineas, cx, y, size, bold, col, lh = size * 1.22) => lineas.map((t, k) =>
+    `<text x="${cx}" y="${y + k * lh}" font-family="Helvetica, Arial, sans-serif" font-size="${size}" font-weight="${bold ? 700 : 400}" fill="${col}" text-anchor="middle">${esc(t)}</text>`).join('');
+  const meter = (svg, x, y) => svg.replace('<svg ', `<svg x="${x}" y="${y}" `);
+  const tarjetas = c.etapas.map((e, i) => {
+    const x = i * (CW + GAP), cx = x + CW / 2, futura = e.estado === 'futura';
+    const calif = !futura && !e.info && !e.temprano && e.estado !== 'sindatos';
+    const palabra = futura ? `Empieza el ${fmtC(e.ini)}` : e.info ? 'El grano se está secando' : e.temprano ? 'Recién empieza' : e.estado === 'sindatos' ? 'Faltan datos' : (e.inv ? PALABRA_INV : PALABRA)[e.estado];
+    const mm = futura ? '' : e.inv ? `Llovieron ${nf(e.mm, 0)} mm (máximo ${e.l[0]} mm)` : e.info ? `Llovieron ${nf(e.mm, 0)} de ${e.necesita} mm` : `Recibió ${nf(e.mm, 0)} de ${e.necesita} mm`;
+    const [dMin, dMax] = rangoDiasEtapa(c.cul, i), dura = `Dura ${dMin === dMax ? `${dMin} días` : `de ${dMin} a ${dMax} días`}`;
+    // calendario
+    let k = `<rect x="${x + 5}" y="20" width="${CW - 10}" height="${e.enCurso ? 50 : 42}" rx="8" fill="#eef1f4"/>`;
+    k += texto(partir(futura ? `Empieza el ${fmtDe(e.ini)}` : fmtRango(e.ini, e.fin), 13, true, CW - 14), cx, 37, 13, true, '#1d2433');
+    k += texto([dura], cx, 55, 12, false, '#475467');
+    if (e.enCurso){
+      k += `<rect x="${x + 14}" y="61" width="${CW - 28}" height="5" rx="2.5" fill="#d5dbe1"/><rect x="${x + 14}" y="61" width="${(CW - 28) * Math.min(1, e.trans / e.dias)}" height="5" rx="2.5" fill="${NAV}"/>`;
+    }
+    // planta y vaso (los mismos del visor)
+    k += meter(plantaSVG(i, c.cul, calif ? e.estado : 'normal', futura), x + 4, 76) + meter(vasoSVG(e, futura), x + 88, 84);
+    // nombre, carita y lluvia
+    const nom = partir(e.n, 15, true);
+    let yy = 198;
+    k += texto(nom, cx, yy, 15, true, '#1d2433'); yy += nom.length * 18 + 6;
+    const pal = partir(palabra, 13, true, CW - 14), colP = calif ? (COL_NIVEL[e.estado] === '#f2c230' ? '#8a6d00' : COL_NIVEL[e.estado]) : '#667085';
+    if (calif){ k += meter(caraSVG(e.estado, 26), cx - 13, yy - 4); yy += 38; }
+    k += texto(pal, cx, yy, 13, true, colP); yy += pal.length * 16 + 4;
+    if (mm){ const ml = partir(mm, 12.5, false); k += texto(ml, cx, yy, 12.5, false, '#475467'); yy += ml.length * 15; }
+    if (!futura && e.enCurso && !e.inv){ k += texto([`${Math.round(e.l[2])} mm en toda la etapa`], cx, yy + 2, 11, false, '#667085'); yy += 15; }
+    fondo = Math.max(fondo, yy);
+    if (e.enCurso) k += `<rect x="${cx - 30}" y="1" width="60" height="22" rx="11" fill="${NAV}"/>` + texto(['Ahora'], cx, 16.5, 13, true, '#ffffff');
+    return { k, futura, enCurso: e.enCurso, x };
+  });
+  // el alto de las tarjetas se ajusta al texto más largo
+  const H = Math.round(fondo + 4);
+  let s = '';
+  tarjetas.forEach((t, i) => {
+    const caja = `<rect x="${t.x}" y="12" width="${CW}" height="${H - 14}" rx="14" fill="${t.enCurso ? '#eef4fb' : '#f8fafc'}"${t.enCurso ? ` stroke="${NAV}" stroke-width="2.5"` : ''}/>`;
+    s += t.futura ? `<g opacity=".5">${caja}${t.k}</g>` : caja + t.k;
+    if (i < tarjetas.length - 1) s += texto(['›'], t.x + CW + GAP / 2, 150, 22, true, '#98a2b3');
+  });
+  const W = c.etapas.length * (CW + GAP) - GAP;
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${s}</svg>`, w: W, h: H };
+}
+function franjaPNG(p, c, escala = 3){
+  const f = franjaSVG(p, c);
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const cv = document.createElement('canvas'); cv.width = f.w * escala; cv.height = f.h * escala;
+        const cx = cv.getContext('2d'); cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, cv.width, cv.height);
+        cx.drawImage(im, 0, 0, cv.width, cv.height);
+        res({ data: cv.toDataURL('image/jpeg', 0.9), w: f.w, h: f.h });
+      } catch (e) { res(null); }
+    };
+    im.onerror = () => res(null);
+    im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(f.svg);
+  });
+}
+/* Dibuja en el PDF la franja de cada cultivo en campo (primero el elegido) */
+async function historiaPDF(doc, h, M, W, pos, salto, txt){
+  const disp = h.p && h.p.cultivos ? h.p.cultivos.filter(c => c.fase !== 'antes') : [];
+  // el cultivo elegido en el visor y, si está en campo, el otro cultivo
+  const lista = disp.filter(c => c.cul === h.cul).concat(disp.filter(c => c.cul !== h.cul && etapaActual(c)));
+  for (const c of lista){
+    const img = await franjaPNG(h.p, c);
+    if (!img) continue;
+    const ih = W * img.h / img.w;
+    salto(14 + 16 + ih + 4);
+    txt(`¿Qué le pasó a tu ${c.nombre.toLowerCase()}?`, 12.5, true, [15,39,66], 1);
+    txt(`Siembra de referencia: ${fmtL(c.siembra)} · Cosecha estimada: ${fmtL(toS(toT(c.siembra) + c.ciclo.dias * DAY))} (${c.ciclo.n.toLowerCase()}, ${c.ciclo.dias} días)`, 8.5, false, [102,112,133], 1.5);
+    const res = resumenCiclo(c);
+    if (res) txt(res, 10, true, [52,64,84], 2.5);
+    salto(ih + 2);
+    doc.addImage(img.data, 'JPEG', M, pos(), W, ih, undefined, 'FAST');
+    pos(ih + 3);
+  }
+  if (!lista.length) return false;
+  // leyenda: caritas y cómo leer el vaso
+  salto(16);
+  let x = M, y = pos();
+  ['normal', 'atencion', 'alerta', 'critico'].forEach(k => {
+    const col = COL_NIVEL[k].match(/\w\w/g).map(v => parseInt(v, 16));
+    doc.setFillColor(...col); doc.circle(x + 2, y + 1.2, 2, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(52, 64, 84);
+    doc.text(PALABRA[k], x + 5.5, y + 2.4); x += 6 + doc.getTextWidth(PALABRA[k]) + 7;
+  });
+  pos(7);
+  txt('El vaso se llena con la lluvia que cayó en cada etapa. La raya punteada es el agua que necesitaba la planta' + (lista.some(c => c.etapas.some(e => e.inv)) ? ' (en la cosecha, la raya es el máximo que conviene).' : '.'), 8.5, false, [102,112,133], 4);
+  return true;
+}
+
 async function exportarPDF(ctx){
   if (!ctx) return;
   if (!(window.jspdf && window.jspdf.jsPDF)){ alert('No se pudo cargar el generador de PDF. Revisa la conexión a internet.'); return; }
@@ -2304,8 +2409,9 @@ async function exportarPDF(ctx){
     y += kh + 6;
   }
 
-  // 3b. tablero fenológico
-  if (ctx.tablero && ctx.tablero.length){
+  // 3b. comunidad: la franja de dibujos del visor (planta, vaso y carita por etapa); municipio: la tabla del tablero
+  const dibujos = ctx.historia ? await historiaPDF(doc, ctx.historia, M, W, (d = 0) => { const v = y; y += d; return v; }, salto, txt) : false;
+  if (!dibujos && ctx.tablero && ctx.tablero.length){
     titulo('Tablero fenológico', 34);
     txt('Lluvia registrada en cada etapa comparada con la que necesita el cultivo (rotafolio SAT).', 8.5, false, [102,112,133], 2);
     const notaVal = NOTA_VALIDACION;
